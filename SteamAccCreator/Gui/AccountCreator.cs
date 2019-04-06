@@ -536,14 +536,22 @@ namespace SteamAccCreator.Gui
 
         private Web.Captcha.CaptchaSolution ShowCaptchaDialog(HttpHandler httpHandler, Action<string> updateStatus, Models.CaptchaSolvingConfig captchaConfig)
         {
-            using (var captchaDialog = new CaptchaDialog(httpHandler, updateStatus, captchaConfig))
+            try
             {
-                if (captchaConfig.Enabled)
-                    return captchaDialog.Solution;
-                else if (captchaDialog.ShowDialog() == DialogResult.OK)
-                    return captchaDialog.Solution;
-                else
-                    return new Web.Captcha.CaptchaSolution(false, "Captcha not recognized!", captchaConfig);
+                using (var captchaDialog = new CaptchaDialog(httpHandler, updateStatus, captchaConfig))
+                {
+                    if (captchaConfig.Enabled)
+                        return captchaDialog.Solution;
+                    else if (captchaDialog.ShowDialog() == DialogResult.OK)
+                        return captchaDialog.Solution;
+                    else
+                        return new Web.Captcha.CaptchaSolution(false, "Captcha not recognized!", captchaConfig);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Fatal("Captcha fatal error", ex);
+                return new Web.Captcha.CaptchaSolution(false, "Captcha fatal error", captchaConfig);
             }
         }
     }
