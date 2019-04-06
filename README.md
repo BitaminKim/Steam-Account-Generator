@@ -1,6 +1,4 @@
-# Steam-Account-Creator
-Steam Account Generator
-
+# Steam Account Generator
 Web generator: https://accgen.cathook.club/
 
 ![screenshot](https://i.imgur.com/e1kIgzl.png)
@@ -22,13 +20,29 @@ Mass Steam Account generator features:
   - Warning: Latest build can cause issues with auto captha services.
   Open issue if you are expecting problems.
 - [x] Proxy support
+  Open issue if you are expecting problems.
 - [x] Save most settings in JSON file.
 
 # Download
 [Steam-Account-Generator/releases](https://github.com/EarsKilla/Steam-Account-Generator/releases)
 
-# Requirements
-[.NET Framework 4.7.2](https://dotnet.microsoft.com/download/dotnet-framework-runtime/net472)
-
 # Communication
 [![Join to our Discord](https://discordapp.com/api/guilds/557374041409716224/widget.png?style=banner2)](https://discord.gg/R96F2DA)
+
+# Supported OS:
+### Windows
+|Requirement|Download|Tested version|
+|---|---|---|
+|.NET Framework|[4.7.2 download](https://dotnet.microsoft.com/download/dotnet-framework-runtime/net472)|`4.7.2`|
+---
+### Linux
+|Requirement|Download|Tested version|
+|---|---|---|
+|Mono|[stable](https://www.mono-project.com/download/stable/)|`5.18.1.0`|
+|xcb|See below|`2.4-4.3`|
+##### **xcb** installation in Debian/Ubuntu:
+```bash
+# apt update
+# apt install xcb
+```
+#### **Note:** Tested on Ubuntu 18.10
