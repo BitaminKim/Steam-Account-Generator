@@ -180,6 +180,7 @@
     <Compile Include="Models\ProxyConfig.cs" />
     <Compile Include="Models\ProxyItem.cs" />
     <Compile Include="Models\RuCaptchaConfig.cs" />
+    <Compile Include="Models\Steam\CaptchaResponse.cs" />
     <Compile Include="Models\Steam\UploadProfileImage.cs" />
     <Compile Include="Pathes.cs" />
     <Compile Include="Program.cs" />

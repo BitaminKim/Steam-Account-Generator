@@ -148,8 +148,16 @@ namespace SteamAccCreator.Web
         {
             for (uint i = 0; i < retryCount; i++)
             {
-                if (GetRecaptcha(out siteKey, out gid, out isRecaptcha))
-                    return true;
+                if (Program.UseOldCaptchaWay)
+                {
+                    if (GetRecaptcha(out siteKey, out gid, out isRecaptcha))
+                        return true;
+                }
+                else
+                {
+                    if (GetRecaptchaV2(out siteKey, out gid, out isRecaptcha))
+                        return true;
+                }
             }
 
             siteKey = gid = string.Empty; isRecaptcha = null;
@@ -212,6 +220,51 @@ namespace SteamAccCreator.Web
             catch (Exception ex)
             {
                 Logger.Error("Getting recaptcha using /join/ url: something TOTALLY went wrong.", ex);
+            }
+            return false;
+        }
+        public bool GetRecaptchaV2(out string siteKey, out string gid, out bool? isRecaptcha)
+        {
+            siteKey = gid = ""; isRecaptcha = false;
+
+            var restCli = new RestClient(Defaults.Web.STEAM_ADDRESS)
+            {
+                CookieContainer = _cookieJar,
+                UserAgent = Defaults.Web.USER_AGENT
+            };
+
+            var joinReq = new RestRequest($"{Defaults.Web.STEAM_RESOURCE_JOIN}", Method.GET);
+            var joinRes = restCli.Execute(joinReq);
+            if (!joinRes.IsSuccessful)
+            {
+                Logger.Error($"'{joinReq.Resource}' request failed. {joinRes.StatusCode}", joinRes.ErrorException);
+                return false;
+            }
+
+            var captchaReq = new RestRequest($"{Defaults.Web.STEAM_RESOURCE_JOIN}refreshcaptcha/", Method.GET);
+            var captchaRes = restCli.Execute(captchaReq);
+            if (!captchaRes.IsSuccessful)
+            {
+                Logger.Error($"'{captchaReq.Resource}' request failed. {captchaRes.StatusCode}", captchaRes.ErrorException);
+                return false;
+            }
+
+            try
+            {
+                var captcha = JsonConvert.DeserializeObject<Models.Steam.CaptchaResponse>(captchaRes.Content);
+                gid = captcha?.Gid ?? throw new Exception("No captcha GID found!");
+                siteKey = captcha?.SiteKey ?? "";
+                isRecaptcha = (captcha?.Type ?? 0) == 2;
+
+                return true;
+            }
+            catch (JsonException jEx)
+            {
+                Logger.Error($"JSON excaption!\n====== RES ======\n{captchaRes.Content}\n====== END ======", jEx);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Something went wrong on getting captcha...\n====== RES ======\n{captchaRes.Content}\n====== END ======", ex);
             }
             return false;
         }

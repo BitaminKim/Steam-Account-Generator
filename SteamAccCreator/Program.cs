@@ -18,6 +18,7 @@ namespace SteamAccCreator
         public static bool UseRuCaptchaDomain = false;
         public static readonly Web.Updater.UpdaterHandler UpdaterHandler = new Web.Updater.UpdaterHandler();
         public static bool GeckoInitialized = false;
+        public static bool UseOldCaptchaWay = false;
 
         [STAThread]
         static void Main()
@@ -110,6 +111,10 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
 
                     return val;
                 }, Web.MailHandler.CheckRandomMailVerifyCount);
+
+            UseOldCaptchaWay = Utility.GetStartOption(@"-oldcaptcha(way)?",
+                (m) => true,
+                false);
 
             if (!Utility.HasStartOption("-nostyles"))
             {
