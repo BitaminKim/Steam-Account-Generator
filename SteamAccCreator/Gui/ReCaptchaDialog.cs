@@ -86,7 +86,7 @@ namespace SteamAccCreator.Gui
             }
 
             var captchagid = (geckoWebBrowser1.Document.GetElementById("captchagid")
-                ?? geckoWebBrowser1.Document.GetElementsByName("captchagid")?.FirstOrDefault(x=> x != null))
+                ?? geckoWebBrowser1.Document.GetElementsByName("captchagid")?.FirstOrDefault(x => x != null))
                 as Gecko.DOM.GeckoInputElement;
 
             Solution = new CaptchaSolution(solutionText, captchagid?.Value, Configuration.Captcha);
@@ -110,14 +110,14 @@ namespace SteamAccCreator.Gui
                 Logger.Info("Stopping navigation to new location...");
                 e.Cancel = true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.Error("Failed to stop navigation...", ex);
                 try
                 {
                     geckoWebBrowser1.Navigate(Defaults.Web.STEAM_JOIN_ADDRESS);
                 }
-                catch(Exception exNav)
+                catch (Exception exNav)
                 {
                     Logger.Error("Navigation error", exNav);
                 }
@@ -143,12 +143,18 @@ namespace SteamAccCreator.Gui
                 {
                     if (jRowChild == null)
                         continue;
-
                     if (jRowChild.NodeType != NodeType.Element)
                         continue;
 
                     var jForm = jRowChild as GeckoHtmlElement;
-                    if (!(jForm?.ClassName?.Contains("form_row") ?? false))
+                    if (jForm == null)
+                        continue;
+                    if (!(jForm.ClassName?.Contains("form_row") ?? false))
+                        continue;
+                    if (jForm.ChildNodes
+                        .Where(x => x != null && x.NodeType == NodeType.Element)
+                            .Select(x => x as GeckoHtmlElement)
+                                .Any(x => x?.Id?.ToLower()?.Contains("captcha_entry") ?? false))
                         continue;
 
                     joinRow.RemoveChild(jRowChild);
