@@ -1,4 +1,5 @@
 ﻿using MailKit.Net.Imap;
+using MimeKit;
 using SACModuleBase.Attributes;
 using SACModuleBase.Models;
 using SACModuleBase.Models.Mail;
@@ -55,16 +56,24 @@ namespace SampleModule
                         var inbox = client.Inbox;
                         Logger.Info("Getting inbox...");
                         inbox.Open(MailKit.FolderAccess.ReadWrite);
-                        var unreadIndex = inbox.FirstUnread;
-                        if (unreadIndex > 0)
+
+                        var unreadSort = inbox.Sort(MailKit.Search.SearchQuery.NotSeen, new[] { MailKit.Search.OrderBy.Date, MailKit.Search.OrderBy.Subject });
+                        var unread = inbox.Fetch(unreadSort, MailKit.MessageSummaryItems.All);
+                        foreach (var inboxMail in unread)
                         {
                             Logger.Info("Unread message found...");
-                            var inboxMail = inbox.GetMessage(unreadIndex);
-                            inbox.SetFlags(unreadIndex, MailKit.MessageFlags.Seen, true);
-                            var mail = new MailBoxMailItem(inboxMail.From?.FirstOrDefault()?.Name ?? "unknown",
-                                inboxMail.To?.FirstOrDefault()?.Name ?? "unknown",
-                                inboxMail.Subject ?? "none",
-                                inboxMail.HtmlBody ?? inboxMail.TextBody ?? "none");
+                            inbox.SetFlags(inboxMail.Index, MailKit.MessageFlags.Seen, true);
+                            if (!(inboxMail?.NormalizedSubject?.ToLower()?.Contains("steam") ?? false))
+                                continue;
+
+                            var envelope = inboxMail?.Envelope;
+                            var _body = inboxMail?.HtmlBody ?? inboxMail?.HtmlBody;
+                            var textPart = inbox.GetBodyPart(inboxMail.Index, _body) as TextPart;
+
+                            var mail = new MailBoxMailItem(envelope?.From?.Mailboxes?.FirstOrDefault()?.Address ?? "noreply@steampowered.com",
+                                    envelope?.To?.Mailboxes?.FirstOrDefault()?.Address ?? response?.Email ?? "unknown",
+                                    inboxMail?.NormalizedSubject ?? "none",
+                                    textPart?.Text ?? "none");
                             mails.Add(mail);
                         }
                     }
