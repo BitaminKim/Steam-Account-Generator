@@ -70,6 +70,7 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
             {
                 Logger.Error($"Initializing gecko/xpcom: error!", ex);
             }
+            Logger.Info($"Gecko/xpcom profile directory: {Xpcom.ProfileDirectory}");
 
             UpdaterHandler.Refresh();
 
