@@ -76,6 +76,12 @@ namespace SteamAccCreator.Web
 
         private string Captchasolutions(string resource, Dictionary<string, object> args)
         {
+            var restCli = new RestClient()
+            {
+                Timeout = 20000,
+                UserAgent = Defaults.Web.USER_AGENT
+            };
+
             _client.BaseUrl = CaptchasolutionsDomain;
             var srequest = new RestRequest(resource, Method.POST);
             foreach (var key in args)
@@ -337,15 +343,7 @@ namespace SteamAccCreator.Web
                         }
 
                         Logger.Debug("Recognizing captcha via Captchasolutions...");
-                        var _resp = Captchasolutions("solve",
-                            new Dictionary<string, object>()
-                            {
-                                { "p", "base64" },
-                                { "captcha", $"data:image/jpg;base64,{captchaPayload}" },
-                                { "key", captchaConfig.CaptchaSolutions.ApiKey },
-                                { "secret", captchaConfig.CaptchaSolutions.ApiSecret },
-                                { "out", "txt" },
-                            });
+                        var _resp = Captchasolutions("solve", _params);
 
                         if (Regex.IsMatch(_resp, @"Error:\s(.+)", RegexOptions.IgnoreCase))
                         {
@@ -370,6 +368,13 @@ namespace SteamAccCreator.Web
                             { "soft_id", "2370" },
                             { "json", "0" }
                         };
+
+                        if (FormMain.ProxyManager.Enabled && FormMain.ProxyManager.Current != null)
+                        {
+                            var proxyCurrent = FormMain.ProxyManager.Current;
+                            _params.Add("proxy", $"{proxyCurrent.Host}:{proxyCurrent.Port}");
+                            _params.Add("proxytype", (proxyCurrent.ProxyType == Enums.ProxyType.Unknown) ? "HTTP" : proxyCurrent.ProxyType.ToString().ToUpper());
+                        }
 
                         if (isRecaptcha.HasValue && isRecaptcha.Value)
                         {
