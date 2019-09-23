@@ -600,23 +600,23 @@ namespace SteamAccCreator.Web
                     switch (succesCode)
                     {
                         case 62:
-                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {Error.SIMILIAR_MAIL}");
-                            updateStatus(Error.SIMILIAR_MAIL);
+                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {ErrorMessages.Steam.SIMILIAR_MAIL}");
+                            updateStatus(ErrorMessages.Steam.SIMILIAR_MAIL);
                             stop = true;
                             return false;
                         case 13:
-                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {Error.INVALID_MAIL}");
-                            updateStatus(Error.INVALID_MAIL);
+                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {ErrorMessages.Steam.INVALID_MAIL}");
+                            updateStatus(ErrorMessages.Steam.INVALID_MAIL);
                             stop = true;
                             return false;
                         case 17:
-                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {Error.TRASH_MAIL}");
-                            updateStatus(Error.TRASH_MAIL);
+                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {ErrorMessages.Steam.TRASH_MAIL}");
+                            updateStatus(ErrorMessages.Steam.TRASH_MAIL);
                             stop = true;
                             return false;
                         case 101: // Please verify your humanity by re-entering the characters below.
                             Logger.Warn("Creating account error: Wrong captcha");
-                            updateStatus(Error.WRONG_CAPTCHA);
+                            updateStatus(ErrorMessages.Steam.WRONG_CAPTCHA);
 
                             if (captcha.Config != null)
                             {
@@ -631,15 +631,15 @@ namespace SteamAccCreator.Web
                             return false;
                         case 84:
                             {
-                                Logger.Warn($"Creating account error: #{jsonResponse.success} / {Error.PROBABLY_IP_BAN}");
-                                updateStatus(Error.PROBABLY_IP_BAN);
+                                Logger.Warn($"Creating account error: #{jsonResponse.success} / {ErrorMessages.Steam.PROBABLY_IP_BAN}");
+                                updateStatus(ErrorMessages.Steam.PROBABLY_IP_BAN);
                                 stop = !FormMain.ProxyManager.GetNew();
                                 CreateFailedCount++;
                             }
                             return false;
                         default:
-                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {Error.UNKNOWN}");
-                            updateStatus(Error.UNKNOWN);
+                            Logger.Warn($"Creating account error: #{jsonResponse.success} / {ErrorMessages.Steam.UNKNOWN}");
+                            updateStatus(ErrorMessages.Steam.UNKNOWN);
                             stop = !FormMain.ProxyManager.GetNew();
                             CreateFailedCount++;
                             break;
@@ -674,21 +674,21 @@ namespace SteamAccCreator.Web
                     return true;
                 case "42":
                 case "29":
-                    Logger.Warn($"Creating account error: #{response.Content} / {Error.REGISTRATION}");
-                    updateStatus?.Invoke(Error.REGISTRATION);
+                    Logger.Warn($"Creating account error: #{response.Content} / {ErrorMessages.Steam.REGISTRATION}");
+                    updateStatus?.Invoke(ErrorMessages.Steam.REGISTRATION);
                     break;
                 case "27":
-                    Logger.Warn($"Creating account error: #{response.Content} / {Error.TIMEOUT}");
-                    updateStatus?.Invoke(Error.TIMEOUT);
+                    Logger.Warn($"Creating account error: #{response.Content} / {ErrorMessages.Steam.TIMEOUT}");
+                    updateStatus?.Invoke(ErrorMessages.Steam.TIMEOUT);
                     break;
                 case "36":
                 case "10":
-                    Logger.Warn($"Creating account error: #{response.Content} / {Error.MAIL_UNVERIFIED}");
-                    updateStatus?.Invoke(Error.MAIL_UNVERIFIED);
+                    Logger.Warn($"Creating account error: #{response.Content} / {ErrorMessages.Steam.MAIL_UNVERIFIED}");
+                    updateStatus?.Invoke(ErrorMessages.Steam.MAIL_UNVERIFIED);
                     break;
                 default:
-                    Logger.Warn($"Creating account error: #{response.Content} / {Error.UNKNOWN}");
-                    updateStatus?.Invoke(Error.UNKNOWN);
+                    Logger.Warn($"Creating account error: #{response.Content} / {ErrorMessages.Steam.UNKNOWN}");
+                    updateStatus?.Invoke(ErrorMessages.Steam.UNKNOWN);
                     shouldRetry = FormMain.ProxyManager.GetNew();
                     break;
             }
@@ -861,7 +861,7 @@ namespace SteamAccCreator.Web
                 return true;
             }
             Logger.Debug($"Creating account: {jsonResponse.details}");
-            updateStatus?.Invoke((jsonResponse.details as object)?.ToString() ?? "Accounts seems to be created but something broken...");
+            updateStatus?.Invoke((jsonResponse.details as object)?.ToString() ?? ErrorMessages.Steam.ACCOUNT_SEEMS_CREATED);
             return false;
         }
 
@@ -883,8 +883,8 @@ namespace SteamAccCreator.Web
                 return true;
             }
 
-            Logger.Warn($"Checking alias (login): {Error.ALIAS_UNAVAILABLE}");
-            statusUpdate?.Invoke(Error.ALIAS_UNAVAILABLE);
+            Logger.Warn($"Checking alias (login): {ErrorMessages.Steam.ALIAS_UNAVAILABLE}");
+            statusUpdate?.Invoke(ErrorMessages.Steam.ALIAS_UNAVAILABLE);
             return false;
         }
 
@@ -911,8 +911,8 @@ namespace SteamAccCreator.Web
                 return true;
             }
 
-            Logger.Debug($"Checking password: {Error.PASSWORD_UNSAFE}");
-            updateStatus?.Invoke(Error.PASSWORD_UNSAFE);
+            Logger.Debug($"Checking password: {ErrorMessages.Steam.PASSWORD_UNSAFE}");
+            updateStatus?.Invoke(ErrorMessages.Steam.PASSWORD_UNSAFE);
             return false;
         }
     }

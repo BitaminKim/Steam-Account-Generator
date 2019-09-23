@@ -423,8 +423,16 @@ namespace SteamAccCreator.Gui
                         var _provider = providerResult.Content;
                         if (!Regex.IsMatch(_provider ?? "", @"^(\@.+)"))
                         {
-                            Logger.Warn($"Creating account: temp. mail service error: {_provider}");
-                            UpdateStatus("No email service! Use custom domain or try again (later)?..");
+                            if (!_provider.StartsWith("@"))
+                            {
+                                Logger.Warn($"Creating account: temp. mail service error: {_provider}");
+                                UpdateStatus(ErrorMessages.Mail.SERVICE_ERROR);
+                            }
+                            else
+                            {
+                                // in case where we have only "@" at start
+                                UpdateStatus(ErrorMessages.Mail.NO_FREE_DOMAIN);
+                            }
                             return;
                         }
 
@@ -562,13 +570,13 @@ namespace SteamAccCreator.Gui
             {
                 switch (_status)
                 {
-                    case Error.PASSWORD_UNSAFE:
-                        Logger.Warn($"Creating account: {Error.PASSWORD_UNSAFE}");
+                    case ErrorMessages.Steam.PASSWORD_UNSAFE:
+                        Logger.Warn($"Creating account: {ErrorMessages.Steam.PASSWORD_UNSAFE}");
                         Password = ShowUpdateInfoBox(_status);
                         UpdateStatusFull();
                         break;
-                    case Error.ALIAS_UNAVAILABLE:
-                        Logger.Warn($"Creating account: {Error.ALIAS_UNAVAILABLE}");
+                    case ErrorMessages.Steam.ALIAS_UNAVAILABLE:
+                        Logger.Warn($"Creating account: {ErrorMessages.Steam.ALIAS_UNAVAILABLE}");
                         Login = ShowUpdateInfoBox(_status);
                         UpdateStatusFull();
                         break;
