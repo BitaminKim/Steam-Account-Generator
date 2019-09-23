@@ -421,10 +421,10 @@ namespace SteamAccCreator.Gui
                             return;
 
                         var _provider = providerResult.Content;
-                        if (!_provider.StartsWith("@"))
+                        if (!Regex.IsMatch(_provider ?? "", @"^(\@.+)"))
                         {
                             Logger.Warn($"Creating account: temp. mail service error: {_provider}");
-                            UpdateStatus("No email service... Try again (later)?...");
+                            UpdateStatus("No email service! Use custom domain or try again (later)?..");
                             return;
                         }
 
