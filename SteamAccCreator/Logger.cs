@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -57,12 +58,18 @@ namespace SteamAccCreator
             return logger;
         }
 
+        private static void DbgPrint(string type, string loggerName, string message, Exception ex)
+            => DbgPrint(type, loggerName, $"{message}\n\nException:\n{ex}");
+        private static void DbgPrint(string type, string loggerName, string message)
+            => System.Diagnostics.Debug.WriteLineIf(Debugger.IsLogging(), $"[{loggerName}|{type.ToUpper()}]: {message}");
+
         public static void Trace(string message)
             => Trace(GetCurrentStackMethod(), message);
         public static void Trace(string loggerName, string message)
         {
             try
             {
+                DbgPrint(nameof(Trace), loggerName, message);
                 var logger = GetLogger(loggerName);
                 logger?.Trace(message);
             }
@@ -94,6 +101,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Debug), loggerName, message);
                 var logger = GetLogger(loggerName);
                 logger?.Debug(message);
             }
@@ -125,6 +133,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Info), loggerName, message);
                 var logger = GetLogger(loggerName);
                 logger?.Info(message);
             }
@@ -156,6 +165,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Warn), loggerName, message);
                 var logger = GetLogger(loggerName);
                 logger?.Warn(message);
             }
@@ -186,6 +196,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Warn), loggerName, message, exception);
                 var logger = GetLogger(loggerName);
                 logger?.Warn(exception, message);
             }
@@ -213,6 +224,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Error), loggerName, message, exception);
                 var logger = GetLogger(loggerName);
                 logger?.Error(exception, message);
             }
@@ -240,6 +252,7 @@ namespace SteamAccCreator
         {
             try
             {
+                DbgPrint(nameof(Fatal), loggerName, message, exception);
                 var logger = GetLogger(loggerName);
                 logger?.Fatal(exception, message);
             }

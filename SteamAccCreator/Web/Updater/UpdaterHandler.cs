@@ -5,7 +5,7 @@ namespace SteamAccCreator.Web.Updater
 {
     public class UpdaterHandler
     {
-        private const string DEFAULT_URL_UPDATE = "https://earskilla.github.io/SteamAccountGenerator-memes/update.json";
+        private const string DEFAULT_URL_UPDATE = "https://steam-account-creator.github.io/memes/update.json";
 
         public static readonly Version CurrentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 
@@ -52,12 +52,12 @@ namespace SteamAccCreator.Web.Updater
 
                 UpdateInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<UpdateInfo>(response.Content);
 
-                if (!MailHandler.IsMailBoxCustom)
+                if (!Mail.MailHandler.IsMailBoxCustom)
                 {
                     try
                     {
                         var mailBoxUri = new Uri(UpdateInfo.Misc.MailBoxUrl);
-                        MailHandler.MailboxUri = mailBoxUri;
+                        Mail.MailHandler.MailboxUri = mailBoxUri;
                     }
                     catch { Logger.Warn($"Mail box URL is broken. URL: {UpdateInfo.Misc.MailBoxUrl}"); }
                 }

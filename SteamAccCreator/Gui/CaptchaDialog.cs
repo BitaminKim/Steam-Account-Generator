@@ -1,67 +1,70 @@
-﻿using System;
+﻿using SACModuleBase.Enums.Captcha;
+using SACModuleBase.Models.Capcha;
+using System;
+using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
-using SteamAccCreator.Web;
-using SteamAccCreator.Web.Captcha;
 
 namespace SteamAccCreator.Gui
 {
     public partial class CaptchaDialog : Form, Interfaces.ICaptchaDialog
     {
-        private readonly HttpHandler _httpHandler;
-        private readonly Models.Configuration Config;
-        private readonly Action<string> UpdateStatus;
-
-        private CaptchaSolution Solution;
-
-        public CaptchaDialog(HttpHandler httpHandler, Action<string> updateStatus, Models.Configuration config)
+        private CaptchaResponse Solution;
+        private CaptchaRequest Captcha;
+        public CaptchaDialog(CaptchaRequest captchaRequest)
         {
-            Logger.Debug("Init. solving captcha...");
-
-            Solution = new CaptchaSolution(false, "Something went wrong...", config.Captcha);
-
-            _httpHandler = httpHandler;
+            Logger.Debug("Initializing image captcha solver...");
+            Solution = new CaptchaResponse(CaptchaStatus.CannotSolve, "Something went wrong...");
+            Captcha = captchaRequest;
 
             InitializeComponent();
 
-            Config = config;
-            UpdateStatus = updateStatus;
-
-            LoadCaptcha();
+            DrawCaptcha();
         }
 
+        private Image GetImageFromBase64String(string base64)
+        {
+            try
+            {
+                Logger.Trace($"Loading captcha image from base64:\n{base64}");
+                var data = Convert.FromBase64String(base64);
+                using (var memStream = new MemoryStream(data))
+                {
+                    return Image.FromStream(memStream);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Initializing captcha image error.", ex);
+            }
+            return null;
+        }
         private void DrawCaptcha()
         {
-            var img = _httpHandler.GetCaptchaImageraw();
+            var img = GetImageFromBase64String(Captcha.CaptchaImage);
             if (img == null)
             {
-                MessageBox.Show(this, "Someting went wrong with loading captcha image...", "Captcha getting error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Solution = new CaptchaResponse(CaptchaStatus.Failed, "Loading captcha image error!");
+                DialogResult = DialogResult.Abort;
+                Close();
                 return;
             }
+
+            Logger.Trace("Captcha image was loaded and will be displayed...");
             boxCaptcha.Image = img;
         }
 
-        private void LoadCaptcha()
+        private void BtnRefresh_Click(object sender, EventArgs e)
         {
-            if (Config.Captcha.Enabled)
-            {
-                Logger.Debug("Solving captcha using services...");
-                Solution = _httpHandler.SolveCaptcha(UpdateStatus, Config);
-            }
-            else
-            {
-                Logger.Debug("Solving captcha using dialog box...");
-                DrawCaptcha();
-            }
-        }
-
-        private void Button1_Click(object sender, EventArgs e)
-        {
-            DrawCaptcha();
+            Logger.Info("Captcha image refresh requested...");
+            Solution = new CaptchaResponse(CaptchaStatus.RetryAvailable, "Refresh requested...");
+            DialogResult = DialogResult.Retry;
+            Close();
         }
 
         private void BtnConfirm_Click(object sender, EventArgs e)
         {
-            Solution = new CaptchaSolution(txtCaptcha.Text, null, Config.Captcha);
+            Solution = new CaptchaResponse(txtCaptcha.Text);
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -82,15 +85,15 @@ namespace SteamAccCreator.Gui
             if (e.CloseReason == CloseReason.UserClosing &&
                 DialogResult != DialogResult.OK)
             {
-                Solution = new CaptchaSolution(false, "You closed captcha dialog box.", Config.Captcha);
+                Solution = new CaptchaResponse(CaptchaStatus.Failed, "Captcha dialog was closed!");
                 DialogResult = DialogResult.Cancel;
             }
         }
 
-        public DialogResult ShowDialog(out CaptchaSolution solution)
+        public DialogResult ShowDialog(out CaptchaResponse solution)
         {
-            var result = this.ShowDialog();
-            solution = this.Solution;
+            var result = ShowDialog();
+            solution = Solution;
             return result;
         }
     }

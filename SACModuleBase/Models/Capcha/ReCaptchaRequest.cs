@@ -5,16 +5,19 @@
         /// <summary>
         /// ReCaptcha page URL
         /// </summary>
-        public string Url { get; private set; }
+        public string Url { get; }
         /// <summary>
         /// ReCaptcha site-key
         /// </summary>
-        public string SiteKey { get; private set; }
+        public string SiteKey { get; }
 
-        public ReCaptchaRequest(string siteKey, string url)
+        public Proxy Proxy { get; }
+
+        public ReCaptchaRequest(string siteKey, string url, Proxy proxy)
         {
             Url = url;
             SiteKey = siteKey;
+            Proxy = proxy;
         }
     }
 }

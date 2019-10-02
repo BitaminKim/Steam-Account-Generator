@@ -1,20 +1,26 @@
 ﻿using Newtonsoft.Json;
+using SACModuleBase.Models;
+using SteamAccCreator.Enums;
 using System;
 using System.Net;
 using System.Text.RegularExpressions;
 using Yove.Proxy;
+
+using modEnums = SACModuleBase.Enums;
 
 namespace SteamAccCreator.Models
 {
     [Serializable]
     public class ProxyItem
     {
+        public static int ProxyRwTimeout = (int)TimeSpan.FromSeconds(15).TotalMilliseconds;
+
         public bool Enabled { get; set; } = false;
         public string Host { get; set; } = string.Empty;
         public int Port { get; set; } = 0;
-        public Enums.ProxyType ProxyType { get; set; } = Enums.ProxyType.Unknown;
+        public modEnums.ProxyType ProxyType { get; set; } = modEnums.ProxyType.Unknown;
         [JsonIgnore]
-        public Enums.ProxyStatus Status { get; set; } = Enums.ProxyStatus.Unknown;
+        public ProxyStatus Status { get; set; } = ProxyStatus.Unknown;
 
         public string UserName { get; set; }
         public string Password { get; set; }
@@ -40,23 +46,23 @@ namespace SteamAccCreator.Models
             switch (type)
             {
                 case "http":
-                    ProxyType = Enums.ProxyType.Http;
+                    ProxyType = modEnums.ProxyType.Http;
                     break;
                 case "https":
-                    ProxyType = Enums.ProxyType.Https;
+                    ProxyType = modEnums.ProxyType.Https;
                     break;
                 case "socks4":
-                    ProxyType = Enums.ProxyType.Socks4;
+                    ProxyType = modEnums.ProxyType.Socks4;
                     break;
                 case "socks":
                 case "socks5":
-                    ProxyType = Enums.ProxyType.Socks5;
+                    ProxyType = modEnums.ProxyType.Socks5;
                     break;
             }
         }
-        public ProxyItem(string host, int port, Enums.ProxyType type)
+        public ProxyItem(string host, int port, modEnums.ProxyType type)
             : this(host, port, type, null, null) { }
-        public ProxyItem(string host, int port, Enums.ProxyType type, string user, string password)
+        public ProxyItem(string host, int port, modEnums.ProxyType type, string user, string password)
         {
             Enabled = true;
             Host = host;
@@ -80,17 +86,20 @@ namespace SteamAccCreator.Models
 
             switch (ProxyType)
             {
-                case Enums.ProxyType.Socks4:
-                    return new ProxyClient(Host, Port, Yove.Proxy.ProxyType.Socks4) { Credentials = credentials };
-                case Enums.ProxyType.Socks5:
-                    return new ProxyClient(Host, Port, Yove.Proxy.ProxyType.Socks5) { Credentials = credentials };
-                case Enums.ProxyType.Http:
-                case Enums.ProxyType.Https:
-                case Enums.ProxyType.Unknown:
+                case modEnums.ProxyType.Socks4:
+                    return new ProxyClient(Host, Port, Yove.Proxy.ProxyType.Socks4) { Credentials = credentials, ReadWriteTimeOut = ProxyRwTimeout };
+                case modEnums.ProxyType.Socks5:
+                    return new ProxyClient(Host, Port, Yove.Proxy.ProxyType.Socks5) { Credentials = credentials, ReadWriteTimeOut = ProxyRwTimeout };
+                case modEnums.ProxyType.Http:
+                case modEnums.ProxyType.Https:
+                case modEnums.ProxyType.Unknown:
                 default:
                     return new WebProxy(Host, Port) { Credentials = credentials };
             }
         }
+
+        public Proxy ToModuleProxy()
+            => new Proxy(Host, Port, ProxyType, UserName, Password);
 
         public override string ToString()
             => $"{ProxyType.ToString().ToLower()}://{Host}:{Port}";

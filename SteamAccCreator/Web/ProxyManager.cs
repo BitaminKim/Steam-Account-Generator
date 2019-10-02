@@ -128,17 +128,23 @@ namespace SteamAccCreator.Web
                 {
                     try
                     {
-                        var client = new RestSharp.RestClient("https://store.steampowered.com/login/")
+                        Logger.Info($"Proxy ({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): Starting test...");
+                        var client = new RestSharp.RestClient(Steam.SteamDefaultUrls.JOIN)
                         {
-                            Proxy = proxy.ToWebProxy()
+                            Timeout = (int)TimeSpan.FromSeconds(15).TotalMilliseconds,
+                            Proxy = proxy.ToWebProxy(),
+                            
                         };
-                        var request = new RestSharp.RestRequest("", RestSharp.Method.GET);
+                        var request = new RestSharp.RestRequest(RestSharp.Method.GET);
                         var response = client.Execute(request);
                         if (!response.IsSuccessful)
                         {
                             proxy.Enabled = false;
                             proxy.Status = Enums.ProxyStatus.Broken;
                             onError?.Invoke();
+
+                            if (response.ErrorException != null)
+                                Logger.Error($"Proxy ({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): HTTP handler got exception!", response.ErrorException);
                         }
                         else
                         {
@@ -149,23 +155,24 @@ namespace SteamAccCreator.Web
                             }
                             else
                             {
+                                Logger.Info($"Proxy({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): Cannot find any related to Steam information!");
                                 proxy.Enabled = false;
                                 proxy.Status = Enums.ProxyStatus.Broken;
                                 onError?.Invoke();
                             }
                         }
 
-                        Logger.Debug($"Proxy({proxy.Host}:{proxy.Port}): {proxy.Status.ToString()}");
+                        Logger.Debug($"Proxy({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): {proxy.Status.ToString()}");
                         threadEndCb(Thread.CurrentThread);
                     }
                     catch (ThreadAbortException)
                     {
-                        Logger.Info("Check proxy thread stopped.");
+                        Logger.Info($"Proxy({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): Check cancelled!");
                         threadEndCb(Thread.CurrentThread);
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error("Check proxy thread error.", ex);
+                        Logger.Error($"Proxy ({proxy.ProxyType}://{proxy.Host}:{proxy.Port}): Failed to test!", ex);
                         onError?.Invoke();
                         threadEndCb(Thread.CurrentThread);
                     }

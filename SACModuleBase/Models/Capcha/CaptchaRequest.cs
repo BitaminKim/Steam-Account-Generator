@@ -8,9 +8,9 @@ namespace SACModuleBase.Models.Capcha
         /// Base64 image
         /// </summary>
         public string CaptchaImage { get; private set; }
-        public IWebProxy Proxy { get; private set; }
+        public Proxy Proxy { get; }
 
-        public CaptchaRequest(string captchaImage, IWebProxy proxy)
+        public CaptchaRequest(string captchaImage, Proxy proxy)
         {
             CaptchaImage = captchaImage;
             Proxy = proxy;

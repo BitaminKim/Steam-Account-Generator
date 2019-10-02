@@ -19,8 +19,7 @@ namespace SteamAccCreator
         public static readonly Web.Updater.UpdaterHandler UpdaterHandler = new Web.Updater.UpdaterHandler();
         public static bool GeckoInitialized = false;
 
-        public static bool EndlessTwoCaptcha = false;
-        public static bool UseOldCaptchaWay = false;
+        public static bool EndlessTwoCaptcha = true;
 
         [STAThread]
         static void Main()
@@ -55,7 +54,7 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
             mutex = new Mutex(true, appName, out createdNew);
             if (!createdNew)
             {
-                Logger.Trace("Another instance is running. Shutting down...");
+                Logger.Warn("Another instance is running. Shutting down...");
                 return;
             }
 
@@ -78,57 +77,75 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
             if (UseRuCaptchaDomain)
                 Logger.Info("Option '-rucaptcha' detected. Switched from 2captcha.com to rucaptcha.com");
 
-            Web.HttpHandler.TwoCaptchaDomain = Utility.GetStartOption(@"-(two|ru)captchaDomain[:=](.*)",
+            Web.Captcha.Handlers.RuCaptchaHandler.Domain = Utility.GetStartOption(@"-(two|ru)captchaDomain[:=](.*)",
                 (m) => Utility.MakeUri(m.Groups[2].Value),
                 new Uri((UseRuCaptchaDomain) ? "http://rucaptcha.com" : "http://2captcha.com"));
 
-            EndlessTwoCaptcha = Utility.GetStartOption(@"-endless(two|ru)captcha",
-                (m) => true,
-                false);
+            EndlessTwoCaptcha = Utility.GetStartOption(@"-noEndless(Two|Ru)captcha",
+                (m) => false,
+                EndlessTwoCaptcha);
 
-            Web.HttpHandler.CaptchasolutionsDomain = Utility.GetStartOption(@"-captchasolutionsDomain[:=](.*)",
+            Web.Captcha.Handlers.CaptchaSolutionsHandler.Domain = Utility.GetStartOption(@"-captchaSolutionsDomain[:=](.*)",
                 (m) => Utility.MakeUri(m.Groups[1].Value),
                 new Uri("http://api.captchasolutions.com/"));
 
-            Web.MailHandler.MailboxUri = Utility.GetStartOption(@"-mailBox[:=](.*)",
+            Web.Mail.MailHandler.MailboxUri = Utility.GetStartOption(@"-mailBox[:=](.*)",
                 (m) =>
                 {
-                    Web.MailHandler.IsMailBoxCustom = true;
+                    Web.Mail.MailHandler.IsMailBoxCustom = true;
                     return Utility.MakeUri(m.Groups[1].Value);
                 },
-                Web.MailHandler.MailboxUri);
+                Web.Mail.MailHandler.MailboxUri);
 
-            Web.MailHandler.CheckUserMailVerifyCount = Utility.GetStartOption(@"-mailUserChecks[:=](\d+)",
+            Web.Mail.MailHandler.CheckUserMailVerifyCount = Utility.GetStartOption(@"-mailUserChecks[:=](\d+)",
                 (m) =>
                 {
                     if (!int.TryParse(m.Groups[1].Value, out int val))
-                        return Web.MailHandler.CheckUserMailVerifyCount;
+                        return Defaults.Mail.COUNT_OF_CHECKS_MAIL_USER;
 
                     return val;
-                }, Web.MailHandler.CheckUserMailVerifyCount);
-            Web.MailHandler.CheckRandomMailVerifyCount = Utility.GetStartOption(@"-mailBoxChecks[:=](\d+)",
+                }, Defaults.Mail.COUNT_OF_CHECKS_MAIL_USER);
+            Web.Mail.MailHandler.CheckRandomMailVerifyCount = Utility.GetStartOption(@"-mailBoxChecks[:=](\d+)",
                 (m) =>
                 {
                     if (!int.TryParse(m.Groups[1].Value, out int val))
-                        return Web.MailHandler.CheckRandomMailVerifyCount;
+                        return Defaults.Mail.COUNT_OF_CHECKS_MAIL_AUTO;
 
                     return val;
-                }, Web.MailHandler.CheckRandomMailVerifyCount);
+                }, Defaults.Mail.COUNT_OF_CHECKS_MAIL_AUTO);
 
-            UseOldCaptchaWay = Utility.GetStartOption(@"-oldcaptcha(way)?",
+            Web.Steam.SteamWebClient.DisableLegitDelay = Utility.GetStartOption(@"-(ns|noSteam|disableSteam)Legit",
                 (m) => true,
-                false);
+                Web.Steam.SteamWebClient.DisableLegitDelay);
 
-            if (!Utility.HasStartOption("-nostyles"))
+            var noStylesOpt = Utility.HasStartOption("-nostyles");
+            if (!noStylesOpt)
             {
                 Logger.Trace("Enabling visual styles...");
                 Application.EnableVisualStyles();
             }
-            if (!Utility.HasStartOption("-defaultTextRendering"))
+            var defTextRenderOpt = Utility.HasStartOption("-defaultTextRendering");
+            if (!defTextRenderOpt)
             {
                 Logger.Trace($"{nameof(Application.SetCompatibleTextRenderingDefault)}(false)...");
                 Application.SetCompatibleTextRenderingDefault(false);
             }
+
+            Logger.Info("\n######################################\n" +
+                "Running config:\n" +
+                $"{nameof(GeckoInitialized)}: {(GeckoInitialized ? "Yes" : "No")}\n" +
+                $"{nameof(UseRuCaptchaDomain)}: {(UseRuCaptchaDomain ? "Yes" : "No")}\n" +
+                $"Ru/TwoCaptcha enless mode: {(EndlessTwoCaptcha ? "Yes" : "No")}" +
+                $"Ru/TwoCaptcha domain: {Web.Captcha.Handlers.RuCaptchaHandler.Domain}\n" +
+                $"CaptchaSolutions domain: {Web.Captcha.Handlers.CaptchaSolutionsHandler.Domain}\n" +
+                $"MailBox URL: {Web.Mail.MailHandler.MailboxUri}\n" +
+                $"Count of mail checks in hand mode: {Web.Mail.MailHandler.CheckUserMailVerifyCount}\n" +
+                $"Count of mail checks in auto mode: {Web.Mail.MailHandler.CheckRandomMailVerifyCount}\n" +
+                $"Disable \"legit\" delays between Steam requests: {(Web.Steam.SteamWebClient.DisableLegitDelay ? "Yes" : "No")}\n" +
+                $"NoStyles: {(noStylesOpt ? "Yes" : "No")}\n" +
+                $"Default text render: {(defTextRenderOpt ? "Yes" : "No")}\n" +
+                "######################################");
+
             Logger.Trace($"Starting app with {nameof(MainForm)}...");
             Application.Run(new MainForm());
         }

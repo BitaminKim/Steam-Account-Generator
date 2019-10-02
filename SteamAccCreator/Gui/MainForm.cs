@@ -1,5 +1,7 @@
+using SteamAccCreator.Web;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,12 +15,14 @@ namespace SteamAccCreator.Gui
 {
     public partial class MainForm : Form
     {
-        const string URL_WIKI_FIND_SUBID = "https://github.com/EarsKilla/Steam-Account-Generator/wiki/Find-sub-ID";
+        const string URL_WIKI_FIND_SUBID = "https://github.com/steam-account-creator/Steam-Account-Generator/wiki/Find-sub-ID";
         public const long PHOTO_MAX_SIZE = 1048576;
 
         public Models.Configuration Configuration { get; private set; } = new Models.Configuration();
-        public Web.ProxyManager ProxyManager { get; private set; }
+        public ProxyManager ProxyManager { get; private set; }
         public Models.ModuleManager ModuleManager { get; private set; }
+
+        public BindingList<Account> Accounts { get; private set; } = new BindingList<Account>();
 
         public MainForm()
         {
@@ -89,17 +93,23 @@ namespace SteamAccCreator.Gui
             CbProxyEnabled.Checked = Configuration.Proxy.Enabled;
             DgvProxyList.DataSource = Configuration.Proxy.List;
 
+            LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
+
             Logger.Trace("Setting properties for profile...");
-            profileConfigBindingSource.DataSource = Configuration.Profile;
+            BsProfileConfig.DataSource = Configuration.Profile;
 
             CbUpdateChannel.SelectedIndex = (int)Program.UpdaterHandler.UpdateChannel;
             CbUpdateChannel_SelectedIndexChanged(this, null);
             CbUpdateChannel.SelectedIndexChanged += CbUpdateChannel_SelectedIndexChanged;
 
-            ProxyManager = new Web.ProxyManager(this);
+            ProxyManager = new ProxyManager(this);
 
             ModuleManager = new Models.ModuleManager(Configuration);
             DgvModules.DataSource = ModuleManager.ModuleBindings;
+
+            DgvAccounts.DataSource = Accounts;
+
+            
         }
 
         private void SaveConfig()
@@ -190,73 +200,114 @@ namespace SteamAccCreator.Gui
             var slowCaptchaMode = Configuration.Captcha.Service == Enums.CaptchaService.None;
             for (var i = 0; i < NumAccountsCount.Value; i++)
             {
-                Logger.Trace($"Account {i + 1} of {NumAccountsCount}.");
-                var accCreator = new AccountCreator(this, Configuration.Clone());
-                if (slowCaptchaMode)
+                Logger.Trace($"Initializing account {i + 1} of {NumAccountsCount}...");
+                var handlerMailBox = ModuleManager
+                    .GetModulesByType<SACModuleBase.ISACHandlerMailBox>()
+                    .FirstOrDefault();
+                var handlerReCaptcha = default(SACModuleBase.ISACHandlerReCaptcha);
+                var handlerImageCaptcha = default(SACModuleBase.ISACHandlerCaptcha);
+
+                switch (Configuration.Captcha.Service)
                 {
-                    Logger.Trace($"Account {i + 1} of {NumAccountsCount}. Starting in async/await thread...");
-                    await Task.Run(() => accCreator.Run());
+                    case Enums.CaptchaService.Captchasolutions:
+                        {
+                            var handler = new Web.Captcha.Handlers.CaptchaSolutionsHandler(Configuration);
+                            handlerReCaptcha = handler;
+                            handlerImageCaptcha = handler;
+                        }
+                        break;
+                    case Enums.CaptchaService.RuCaptcha:
+                        {
+                            var handler = new Web.Captcha.Handlers.RuCaptchaHandler(Configuration);
+                            handlerReCaptcha = handler;
+                            handlerImageCaptcha = handler;
+                        }
+                        break;
+                    case Enums.CaptchaService.Module:
+                        {
+                            handlerReCaptcha = ModuleManager
+                                .GetModulesByType<SACModuleBase.ISACHandlerReCaptcha>()
+                                .FirstOrDefault();
+
+                            handlerImageCaptcha = ModuleManager
+                                .GetModulesByType<SACModuleBase.ISACHandlerCaptcha>()
+                                .FirstOrDefault();
+                        }
+                        break;
                 }
+
+                var accountNumber = Accounts.Count;
+                var account = new Account(new Models.AccountCreateOptions()
+                {
+                    ParentForm = this,
+                    ProxyManager = ProxyManager,
+                    Config = Configuration,
+                    AccountNumber = accountNumber,
+                    HandlerMailBox = handlerMailBox,
+                    HandlerGoogleCaptcha = handlerReCaptcha,
+                    HandlerImageCaptcha = handlerImageCaptcha,
+                    RefreshDisplayFn = () => RefreshDisplay(accountNumber),
+                    SetStatusColorFn = (color) => ChangeStatusColor(accountNumber, color),
+                    ExecuteInUiFn = (action) => ExecuteInvoke(action ?? new Action(() => Logger.Warn("Action to execute in UI is null!")))
+                });
+
+                Accounts.Add(account);
+
+                Logger.Trace($"Account {i + 1} of {NumAccountsCount} ({accountNumber} in total). " +
+                    $"Starting creation witch captcha {((slowCaptchaMode) ? "hand" : "auto")} mode...");
+
+                if (slowCaptchaMode)
+                    await account.Register();
                 else
                 {
-                    Logger.Trace($"Account {i + 1} of {NumAccountsCount}. Starting in new thread...");
-                    var thread = new Thread(accCreator.Run);
+                    var thread = new Thread(async () => await account.Register());
                     thread.Start();
                 }
             }
         }
 
-        public int AddToTable(string mail, string alias, string pass, long steamId, string status)
+        private void RefreshDisplay(int rowNumber)
         {
-            var index = -1;
-            Invoke(new Action(() =>
-            {
-                index = dataAccounts.Rows.Add(new DataGridViewRow
-                {
-                    Cells =
-                    {
-                        new DataGridViewTextBoxCell {Value = mail},
-                        new DataGridViewTextBoxCell {Value = alias},
-                        new DataGridViewTextBoxCell {Value = pass},
-                        new DataGridViewTextBoxCell {Value = $"{steamId}"},
-                        new DataGridViewTextBoxCell {Value = status}
-                    }
-                });
-            }));
-            Logger.Trace($"int index({index}) = {nameof(AddToTable)}(\"{mail}\", \"{alias}\", \"****** PASSWORD ******\", \"{steamId}\", \"{status}\");");
-            return index;
-        }
-
-        public void UpdateStatus(int i, string status, long steamId)
-        {
-            Logger.Trace($"void {nameof(UpdateStatus)}(\"{i}\", \"{status}\", \"{steamId}\");");
-            Invoke(new Action(() =>
-            {
-                UpdateStatus(i,
-                    dataAccounts.Rows[i].Cells[0].Value?.ToString() ?? "",
-                    dataAccounts.Rows[i].Cells[1].Value?.ToString() ?? "",
-                    dataAccounts.Rows[i].Cells[2].Value?.ToString() ?? "",
-                    steamId,
-                    status);
-            }));
-        }
-
-        public void UpdateStatus(int i, string mail, string alias, string password, long steamId, string status)
-            => UpdateStatus(i, mail, alias, password, $"{steamId}", status);
-        public void UpdateStatus(int i, string mail, string alias, string password, string steamId, string status)
-        {
-            Logger.Trace($"void {nameof(UpdateStatus)}(\"{i}\", \"{mail}\", \"{alias}\", \"****** PASSWORD ******\", \"{steamId}\", \"{status}\");");
+            Logger.Trace($"void {nameof(RefreshDisplay)}({nameof(rowNumber)}=\"{rowNumber}\");");
             Invoke(new Action(() =>
             {
                 try
                 {
-                    dataAccounts.Rows[i].Cells[0].Value = mail;
-                    dataAccounts.Rows[i].Cells[1].Value = alias;
-                    dataAccounts.Rows[i].Cells[2].Value = password;
-                    dataAccounts.Rows[i].Cells[3].Value = $"{steamId}";
-                    dataAccounts.Rows[i].Cells[4].Value = status;
+                    var rowToRefresh = DgvAccounts.Rows[rowNumber];
+                    var cellsCount = rowToRefresh.Cells.Count;
+                    for (int i = 0; i < cellsCount; i++)
+                    {
+                        DgvAccounts.UpdateCellValue(i, rowNumber);
+                    }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to refresh display of {nameof(rowNumber)}={rowNumber}", ex);
+                }
+            }));
+        }
+
+        private void ChangeStatusColor(int rowNumber, System.Drawing.Color color)
+        {
+            Logger.Trace($"void {nameof(ChangeStatusColor)}({nameof(rowNumber)}=\"{rowNumber}\", {nameof(color)}=\"{color}\");");
+            Invoke(new Action(() =>
+            {
+                try
+                {
+                    var row = DgvAccounts.Rows[rowNumber];
+                    for (int i = 0; i < row.Cells.Count; i++)
+                    {
+                        var cell = row.Cells[i];
+                        if (cell.OwningColumn.HeaderText.ToLower().Trim() != "status")
+                            continue;
+
+                        cell.Style.BackColor = color;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to changle color of {nameof(rowNumber)}={rowNumber}", ex);
+                }
             }));
         }
 
@@ -317,60 +368,63 @@ namespace SteamAccCreator.Gui
         {
             Logger.Trace($"void {nameof(BtnLoadIds_Click)}();");
 
-            openFileDialog1.Filter = "All supported|*.txt;*.json|Text file|*.txt|JSON file|*.json|Try to parse from any type|*.*";
-            openFileDialog1.Title = "Load game sub IDs";
-
-            if (openFileDialog1.ShowDialog() != DialogResult.OK)
-                return;
-
-            Logger.Trace($"Selected id's file: {openFileDialog1.FileName}");
-
-            var fileData = System.IO.File.ReadAllText(openFileDialog1.FileName);
-            Configuration.Games.GamesToAdd = Configuration.Games.GamesToAdd ?? new Models.GameInfo[0];
-            try
+            using (var fileDialog = new OpenFileDialog())
             {
-                var games = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Models.GameInfo>>(fileData);
-                var _temp = Configuration.Games.GamesToAdd.ToList();
+                fileDialog.Filter = "All supported|*.txt;*.json|Text file|*.txt|JSON file|*.json|Try to parse from any type|*.*";
+                fileDialog.Title = "Load game sub IDs";
 
-                games = games.Where(x => !_temp.Any(g => g.Equals(x)));
-                _temp.AddRange(games);
+                if (fileDialog.ShowDialog() != DialogResult.OK)
+                    return;
 
-                Configuration.Games.GamesToAdd = _temp;
-            }
-            catch (Newtonsoft.Json.JsonException jEx)
-            {
-                Logger.Error("JSON exception was thrown... It's probably file don't contains JSON data. Trying to parse it...", jEx);
+                Logger.Trace($"Selected id's file: {fileDialog.FileName}");
+
+                var fileData = System.IO.File.ReadAllText(fileDialog.FileName);
+                Configuration.Games.GamesToAdd = Configuration.Games.GamesToAdd ?? new Models.GameInfo[0];
                 try
                 {
-                    var matches = Regex.Matches(fileData, @"(\d+):(.*)", RegexOptions.IgnoreCase);
-                    foreach (Match match in matches)
-                    {
-                        try
-                        {
-                            var game = new Models.GameInfo()
-                            {
-                                SubId = int.Parse(match.Groups[1].Value),
-                                Name = match.Groups[2].Value
-                            };
+                    var games = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Models.GameInfo>>(fileData);
+                    var _temp = Configuration.Games.GamesToAdd.ToList();
 
-                            if (!Configuration.Games.GamesToAdd.Any(x => x.Equals(game)))
-                                Configuration.Games.GamesToAdd = Configuration.Games.GamesToAdd.Append(game);
+                    games = games.Where(x => !_temp.Any(g => g.Equals(x)));
+                    _temp.AddRange(games);
+
+                    Configuration.Games.GamesToAdd = _temp;
+                }
+                catch (Newtonsoft.Json.JsonException jEx)
+                {
+                    Logger.Error("JSON exception was thrown... It's probably file don't contains JSON data. Trying to parse it...", jEx);
+                    try
+                    {
+                        var matches = Regex.Matches(fileData, @"(\d+):(.*)", RegexOptions.IgnoreCase);
+                        foreach (Match match in matches)
+                        {
+                            try
+                            {
+                                var game = new Models.GameInfo()
+                                {
+                                    SubId = int.Parse(match.Groups[1].Value),
+                                    Name = match.Groups[2].Value
+                                };
+
+                                if (!Configuration.Games.GamesToAdd.Any(x => x.Equals(game)))
+                                    Configuration.Games.GamesToAdd = Configuration.Games.GamesToAdd.Append(game);
+                            }
+                            catch (Exception cEx) { Logger.Error("Parsing error (in foreach)!", cEx); }
                         }
-                        catch (Exception cEx) { Logger.Error("Parsing error (in foreach)!", cEx); }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Parsing via regexp. error!", ex);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Parsing via regexp. error!", ex);
+                    Logger.Error("Parsing error!", ex);
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Parsing error!", ex);
-            }
 
-            Logger.Trace($"Updating {nameof(ListGames)}... Count of games: {Configuration.Games.GamesToAdd.Count()}");
-            ListGames.UpdateItems(Configuration.Games.GamesToAdd);
+                Logger.Trace($"Updating {nameof(ListGames)}... Count of games: {Configuration.Games.GamesToAdd.Count()}");
+                ListGames.UpdateItems(Configuration.Games.GamesToAdd);
+            }
         }
 
         private void BtnAddGame_Click(object sender, EventArgs e)
@@ -453,18 +507,21 @@ namespace SteamAccCreator.Gui
                 return;
             }
 
-            saveFileDialog1.Filter = "JSON|*.json";
-            saveFileDialog1.FilterIndex = 0;
-            saveFileDialog1.DefaultExt = "json";
-            saveFileDialog1.OverwritePrompt = true;
+            using (var fileDialog = new SaveFileDialog())
+            {
+                fileDialog.Filter = "JSON|*.json";
+                fileDialog.FilterIndex = 0;
+                fileDialog.DefaultExt = "json";
+                fileDialog.OverwritePrompt = true;
 
-            saveFileDialog1.Title = "Export game IDs";
+                fileDialog.Title = "Export game IDs";
 
-            if (saveFileDialog1.ShowDialog() != DialogResult.OK)
-                return;
+                if (fileDialog.ShowDialog() != DialogResult.OK)
+                    return;
 
-            var data = Newtonsoft.Json.JsonConvert.SerializeObject(Configuration.Games.GamesToAdd, Newtonsoft.Json.Formatting.Indented);
-            System.IO.File.WriteAllText(saveFileDialog1.FileName, data);
+                var data = Newtonsoft.Json.JsonConvert.SerializeObject(Configuration.Games.GamesToAdd, Newtonsoft.Json.Formatting.Indented);
+                System.IO.File.WriteAllText(fileDialog.FileName, data);
+            }
         }
 
         private void CbAddGames_CheckedChanged(object sender, EventArgs e)
@@ -490,19 +547,22 @@ namespace SteamAccCreator.Gui
 
         private void BtnFwChangeFolder_Click(object sender, EventArgs e)
         {
-            saveFileDialog1.Filter = "Text File|*.txt|KeePass CSV|*.csv";
-            saveFileDialog1.Title = "Where to save accounts";
-
-            saveFileDialog1.CheckPathExists = true;
-            saveFileDialog1.OverwritePrompt = true;
-
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            using (var fileDialog = new SaveFileDialog())
             {
-                Configuration.Output.Path = saveFileDialog1.FileName;
+                fileDialog.Filter = "Text File|*.txt|KeePass CSV|*.csv";
+                fileDialog.Title = "Where to save accounts";
+
+                fileDialog.CheckPathExists = true;
+                fileDialog.OverwritePrompt = true;
+
+                if (fileDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                Configuration.Output.Path = fileDialog.FileName;
 
                 Logger.Debug($"Save path was changed to: {Configuration.Output.Path}");
 
-                if (saveFileDialog1.FilterIndex == 2)
+                if (fileDialog.FilterIndex == 2)
                     CbFwOutType.SelectedIndex = (int)File.SaveType.KeepassCsv;
 
                 LinkFwPath.Text = Configuration.Output.GetVisualPath();
@@ -613,49 +673,52 @@ namespace SteamAccCreator.Gui
 
         private void BtnProxyLoad_Click(object sender, EventArgs e)
         {
-            openFileDialog1.Filter = "Text file|*.txt";
-            openFileDialog1.Title = "Load proxy list";
-
-            if (openFileDialog1.ShowDialog() != DialogResult.OK)
-                return;
-
-            Logger.Trace("Loading proxies...");
-
-            var data = System.IO.File.ReadAllLines(openFileDialog1.FileName);
-            var proxies = new List<Models.ProxyItem>();
-            var proxiesOld = (DgvProxyList.DataSource as IEnumerable<Models.ProxyItem>) ?? new Models.ProxyItem[0];
-
-            if (proxiesOld.Count() > 0)
+            using (var fileDialog = new OpenFileDialog())
             {
-                switch (MessageBox.Show(this, "Merge with current proxies?", "Proxy loading...", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question))
+                fileDialog.Filter = "Text file|*.txt";
+                fileDialog.Title = "Load proxy list";
+
+                if (fileDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                Logger.Trace("Loading proxies...");
+
+                var data = System.IO.File.ReadAllLines(fileDialog.FileName);
+                var proxies = new List<Models.ProxyItem>();
+                var proxiesOld = (DgvProxyList.DataSource as IEnumerable<Models.ProxyItem>) ?? new Models.ProxyItem[0];
+
+                if (proxiesOld.Count() > 0)
                 {
-                    case DialogResult.Yes:
-                        proxies.AddRange(proxiesOld);
-                        break;
-                    case DialogResult.No:
-                        break;
-                    default:
-                        return;
+                    switch (MessageBox.Show(this, "Merge with current proxies?", "Proxy loading...", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question))
+                    {
+                        case DialogResult.Yes:
+                            proxies.AddRange(proxiesOld);
+                            break;
+                        case DialogResult.No:
+                            break;
+                        default:
+                            return;
+                    }
                 }
+
+                Logger.Trace($"Proxies file have {data.Count()} line(s).");
+
+                foreach (var line in data)
+                {
+                    try
+                    {
+                        proxies.Add(new Models.ProxyItem(line));
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Adding proxy error. Line: {line}", ex);
+                    }
+                }
+
+                DgvProxyList.DataSource = Configuration.Proxy.List = proxies;
+
+                Logger.Trace("Loading proxies done.");
             }
-
-            Logger.Trace($"Proxies file have {data.Count()} line(s).");
-
-            foreach (var line in data)
-            {
-                try
-                {
-                    proxies.Add(new Models.ProxyItem(line));
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Adding proxy error. Line: {line}", ex);
-                }
-            }
-
-            DgvProxyList.DataSource = Configuration.Proxy.List = proxies;
-
-            Logger.Trace("Loading proxies done.");
         }
 
         private void BtnProxyTestCancel_Click(object sender, EventArgs e)
@@ -704,22 +767,22 @@ namespace SteamAccCreator.Gui
 
         private void BtnProfileSelectImg_Click(object sender, EventArgs e)
         {
-            var openDialog = new OpenFileDialog()
+            using (var openDialog = new OpenFileDialog())
             {
-                Filter = "Image files|*.png;*.jpg;*.jpeg;*.gif|All files|*.*",
-            };
+                openDialog.Filter = "Image files|*.png;*.jpg;*.jpeg;*.gif|All files|*.*";
 
-            if (openDialog.ShowDialog() != DialogResult.OK)
-                return;
+                if (openDialog.ShowDialog() != DialogResult.OK)
+                    return;
 
-            var fileInfo = new FileInfo(openDialog.FileName);
-            if (fileInfo.Length > PHOTO_MAX_SIZE)
-            {
-                MessageBox.Show(this, "Cannot use this file. It cannot be larger than 1024kb.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                var fileInfo = new FileInfo(openDialog.FileName);
+                if (fileInfo.Length > PHOTO_MAX_SIZE)
+                {
+                    MessageBox.Show(this, "Cannot use this file. It cannot be larger than 1024kb.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                TbProfileImagePath.Text = openDialog.FileName;
             }
-
-            TbProfileImagePath.Text = openDialog.FileName;
         }
 
         private void BtnProfileRmImg_Click(object sender, EventArgs e)
@@ -790,6 +853,108 @@ namespace SteamAccCreator.Gui
         private void CbCapSolver_SelectedIndexChanged(object sender, EventArgs e)
         {
             Configuration.Captcha.ServiceIndex = CbCapSolver.SelectedIndex;
+        }
+
+        private void BtnProfileLoadGroupsList_Click(object sender, EventArgs e)
+        {
+            using (var fileDialog = new OpenFileDialog())
+            {
+                fileDialog.Filter = "Text file documents|*.txt";
+                fileDialog.Title = "Load groups to join";
+
+                if (fileDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                var urls = System.IO.File.ReadAllLines(fileDialog.FileName);
+                var groupUrls = new List<string>();
+                foreach (var url in urls)
+                {
+                    if (!Account.SteamGroupLink.IsMatch(url ?? ""))
+                    {
+                        Logger.Warn($"Cannot parse group '{url}'...");
+                        continue;
+                    }
+
+                    groupUrls.Add(url);
+                }
+
+                var shouldClear = MessageBox.Show("You have already groups in existing list.\n" +
+                    "Replace existing list?", "...", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                switch (shouldClear)
+                {
+                    case DialogResult.Yes:
+                        Configuration.Profile.GroupsToJoin = groupUrls;
+                        LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
+                        return;
+                    case DialogResult.No:
+                        {
+                            var shouldMerge = MessageBox.Show("You want to merge these lists?", "...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (shouldMerge != DialogResult.Yes)
+                                return;
+
+                            var _temp = Configuration.Profile.GroupsToJoin.ToList();
+                            _temp.AddRange(groupUrls.Where(ng => // exclude existing
+                            {
+                                var link = Account.SteamGroupLink.Match(ng);
+                                return !_temp.Any(og =>
+                                {
+                                    var oldLink = Account.SteamGroupLink.Match(og);
+                                    if (!oldLink.Success)
+                                        return false;
+
+                                    return oldLink.Groups[1].Value.ToLower() == link.Groups[1].Value.ToLower();
+                                });
+                            }));
+                            Configuration.Profile.GroupsToJoin = _temp;
+                            LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
+                        }
+                        break;
+                }
+            }
+        }
+
+        private void BtnProfileGroupsAdd_Click(object sender, EventArgs e)
+        {
+            using (var addDialog = new AddGroupDialog())
+            {
+                if (addDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                var url = addDialog?.TbGroupUrl?.Text;
+                if (!Account.SteamGroupLink.IsMatch(url ?? ""))
+                {
+                    MessageBox.Show("URL cannot be empty!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var _temp = Configuration.Profile.GroupsToJoin.ToList();
+                _temp.Add(addDialog.TbGroupUrl.Text);
+                Configuration.Profile.GroupsToJoin = _temp;
+
+                LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
+            }
+        }
+
+        private void BtnProfileGroupsRm_Click(object sender, EventArgs e)
+        {
+            Logger.Trace($"{nameof(BtnProfileGroupsRm_Click)}(..., ...);");
+            var index = LbProfileGroupsToJoin.SelectedIndex;
+            if (index < 0 || index >= LbProfileGroupsToJoin.Items.Count)
+                return;
+
+            var _temp = Configuration.Profile.GroupsToJoin.ToList();
+            var _uri = _temp.ElementAtOrDefault(index);
+            Logger.Debug($"URL '{_uri}' removed.");
+            _temp.RemoveAt(index);
+            Configuration.Profile.GroupsToJoin = _temp;
+
+            LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
+        }
+
+        private void BtnGroupsClear_Click(object sender, EventArgs e)
+        {
+            Configuration.Profile.GroupsToJoin = new string[0];
+            LbProfileGroupsToJoin.UpdateItems(Configuration.Profile.GroupsToJoin);
         }
     }
 }

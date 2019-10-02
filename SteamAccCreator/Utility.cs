@@ -22,6 +22,21 @@ namespace SteamAccCreator
             }
         }
 
+        public static int GetRandomNumberRng(int max)
+        {
+            var data = new byte[16];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetNonZeroBytes(data);
+            }
+            var value = 0;
+            foreach (var b in data)
+            {
+                value += b;
+            }
+            return value % max;
+        }
+
         public static string GetRandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -100,7 +115,23 @@ namespace SteamAccCreator
             else if (collection.Count() == 1)
                 return collection.First();
 
-            return collection.ElementAt(GetRandomNumber(0, collection.Count() - 1));
+            return collection.ElementAt(GetRandomNumberRng(collection.Count() - 1));
+        }
+
+        public static IEnumerable<T> RandomElement<T>(this IEnumerable<T> collection, int count)
+        {
+            if ((collection?.Count() ?? 0) < 1)
+                return default;
+            else if (collection.Count() == 1 || count >= collection.Count())
+                return collection;
+
+            var r = new List<T>();
+            for (int i = 0; i < count; i++)
+            {
+                r.Add(collection.RandomElement());
+            }
+
+            return r;
         }
 
         public static string ToTitleCase(this string text)

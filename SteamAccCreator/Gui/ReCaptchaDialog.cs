@@ -1,55 +1,58 @@
 ﻿using Gecko;
-using SteamAccCreator.Web.Captcha;
+using SACModuleBase.Enums;
+using SACModuleBase.Enums.Captcha;
+using SACModuleBase.Models;
+using SACModuleBase.Models.Capcha;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SteamAccCreator.Gui
 {
     public partial class ReCaptchaDialog : Form, Interfaces.ICaptchaDialog
     {
-        private CaptchaSolution Solution = new CaptchaSolution(false, "Something went wrong.", null);
-        private Models.Configuration Configuration;
+        private CaptchaResponse Solution;
 
-        public ReCaptchaDialog(Models.Configuration configuration, Models.ProxyItem proxy)
+        public ReCaptchaDialog(Proxy proxy)
         {
-            Configuration = configuration;
-            Solution = new CaptchaSolution(false, Solution.Message, configuration.Captcha);
+            Solution = new CaptchaResponse(CaptchaStatus.Failed, "Something went wrong...");
+
             InitializeComponent();
-
-            if ((proxy?.Enabled ?? false))
+            if (proxy == null)
             {
-                GeckoPreferences.Default["network.proxy.type"] = 1;
-
-                // clear proxies
-                GeckoSetProxy(Enums.ProxyType.Http, "", 0);
-                GeckoSetProxy(Enums.ProxyType.Socks4, "", 0);
-
-                GeckoSetProxy(proxy.ProxyType, proxy.Host, proxy.Port);
+                try
+                {
+                    GeckoPreferences.Default.SetIntPref("network.proxy.type", 4);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to update gecko preference 'network.proxy.type' to '4'", ex);
+                }
+                return;
             }
-            else
-                GeckoPreferences.Default["network.proxy.type"] = 0;
+
+            GeckoPreferences.Default["network.proxy.type"] = 1;
+            // clear proxies
+            GeckoSetProxy(ProxyType.Http, "", 0);
+            GeckoSetProxy(ProxyType.Socks4, "", 0);
+
+            GeckoSetProxy(proxy.Type, proxy.Host, proxy.Port);
         }
 
-        private void GeckoSetProxy(Enums.ProxyType proxyType, string host, int port)
+        private void GeckoSetProxy(ProxyType proxyType, string host, int port)
         {
             switch (proxyType)
             {
-                case Enums.ProxyType.Socks4:
-                case Enums.ProxyType.Socks5:
+                case ProxyType.Socks4:
+                case ProxyType.Socks5:
                     GeckoPreferences.Default["network.proxy.socks"] = host;
                     GeckoPreferences.Default["network.proxy.socks_port"] = port;
                     break;
-                case Enums.ProxyType.Unknown:
-                case Enums.ProxyType.Http:
-                case Enums.ProxyType.Https:
+                case ProxyType.Unknown:
+                case ProxyType.Http:
+                case ProxyType.Https:
                 default:
                     GeckoPreferences.Default["network.proxy.http"] = host;
                     GeckoPreferences.Default["network.proxy.http_port"] = port;
@@ -58,16 +61,16 @@ namespace SteamAccCreator.Gui
                     break;
             }
 
-            if (proxyType == Enums.ProxyType.Socks4)
+            if (proxyType == ProxyType.Socks4)
                 GeckoPreferences.Default["network.proxy.socks_version"] = 4;
-            else if (proxyType == Enums.ProxyType.Socks5)
+            else if (proxyType == ProxyType.Socks5)
                 GeckoPreferences.Default["network.proxy.socks_version"] = 5;
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
-            Solution = new CaptchaSolution(false, "Closed captcha dialog.", Configuration.Captcha);
+            Solution = new CaptchaResponse(CaptchaStatus.Failed, "Captcha dialog was closed!");
             Close();
         }
 
@@ -85,11 +88,7 @@ namespace SteamAccCreator.Gui
                 solutionText += $"{captchaText}\n\n";
             }
 
-            var captchagid = (geckoWebBrowser1.Document.GetElementById("captchagid")
-                ?? geckoWebBrowser1.Document.GetElementsByName("captchagid")?.FirstOrDefault(x => x != null))
-                as Gecko.DOM.GeckoInputElement;
-
-            Solution = new CaptchaSolution(solutionText, captchagid?.Value, Configuration.Captcha);
+            Solution = new CaptchaResponse(solutionText);
 
             DialogResult = DialogResult.OK;
             Close();
@@ -97,9 +96,8 @@ namespace SteamAccCreator.Gui
 
         private void geckoWebBrowser1_Navigating(object sender, Gecko.Events.GeckoNavigatingEventArgs e)
         {
-            if (Regex.IsMatch(e.Uri?.Segments?.LastOrDefault() ?? "",
-                @"join\/?", RegexOptions.IgnoreCase)
-                || (e.Uri?.Host ?? "").ToLower() != (Defaults.Web.STEAM_JOIN_URI?.Host?.ToLower() ?? "NULL"))
+            if (Regex.IsMatch(e.Uri?.Segments?.LastOrDefault() ?? "", @"join\/?", RegexOptions.IgnoreCase)
+                || (e.Uri?.Host ?? "").ToLower() != (new Uri(Web.Steam.SteamDefaultUrls.JOIN).Host.ToLower())) // wat?
             {
                 Logger.Trace("Navigated to /join/.");
                 return;
@@ -115,7 +113,7 @@ namespace SteamAccCreator.Gui
                 Logger.Error("Failed to stop navigation...", ex);
                 try
                 {
-                    geckoWebBrowser1.Navigate(Defaults.Web.STEAM_JOIN_ADDRESS);
+                    geckoWebBrowser1.Navigate(Web.Steam.SteamDefaultUrls.JOIN, GeckoLoadFlags.FirstLoad);
                 }
                 catch (Exception exNav)
                 {
@@ -167,7 +165,7 @@ namespace SteamAccCreator.Gui
             e.Cancel = true;
         }
 
-        public DialogResult ShowDialog(out CaptchaSolution solution)
+        public DialogResult ShowDialog(out CaptchaResponse solution)
         {
             btnReload_Click(null, null);
 
@@ -178,7 +176,7 @@ namespace SteamAccCreator.Gui
 
         private void btnReload_Click(object sender, EventArgs e)
         {
-            geckoWebBrowser1.Navigate(Defaults.Web.STEAM_JOIN_ADDRESS);
+            geckoWebBrowser1.Navigate(Web.Steam.SteamDefaultUrls.JOIN, GeckoLoadFlags.FirstLoad);
         }
     }
 }

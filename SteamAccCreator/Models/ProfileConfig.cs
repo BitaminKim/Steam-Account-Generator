@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SteamAccCreator.Models
 {
@@ -14,5 +15,8 @@ namespace SteamAccCreator.Models
         public string Country { get; set; } = "";
         public string State { get; set; } = "";
         public string City { get; set; } = "";
+
+        public bool DoJoinToGroups { get; set; } = false;
+        public IEnumerable<string> GroupsToJoin { get; set; } = new string[0];
     }
 }

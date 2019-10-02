@@ -5,9 +5,9 @@ namespace SACModuleBase.Models.Mail
     public class MailBoxRequest
     {
         public string Login { get; private set; }
-        public IWebProxy Proxy { get; private set; }
+        public Proxy Proxy { get; private set; }
 
-        public MailBoxRequest(string login, IWebProxy proxy)
+        public MailBoxRequest(string login, Proxy proxy)
         {
             Login = login;
             Proxy = proxy;
