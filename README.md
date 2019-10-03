@@ -4,8 +4,8 @@ Web generator: https://accgen.cathook.club/ (not maintained by [EarsKilla](https
 
 |Branch|CI status|
 |------|---------|
-|[MASTER](https://github.com/steam-account-creator/Steam-Account-Generator/tree/master)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/master?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/master)|
-|[DEV](https://github.com/steam-account-creator/Steam-Account-Generator/tree/dev)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/dev?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/dev)|
+|[MASTER](https://github.com/steam-account-creator/Steam-Account-Generator/tree/master)|[![Build status](https://ci.appveyor.com/api/projects/status/37bi6pmwdb684u0u/branch/master?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator-ivi0o/branch/master)|
+|[DEV](https://github.com/steam-account-creator/Steam-Account-Generator/tree/dev)|[![Build status](https://ci.appveyor.com/api/projects/status/37bi6pmwdb684u0u/branch/dev?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator-ivi0o/branch/dev)|
 
 ![screenshot](etc/app_screenshots/default/settings.png)  
 More screenshots [here](etc/app_screenshots/INDEX.md)
