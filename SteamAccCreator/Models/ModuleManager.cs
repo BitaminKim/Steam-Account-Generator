@@ -74,6 +74,15 @@ namespace SteamAccCreator.Models
             LoadModules();
         }
 
+        public IEnumerable<T> GetModulesByType<T>() where T : SACModuleBase.ISACBase
+        {
+            var _baseT = typeof(T);
+            Logger.Debug($"Getting modules by <{_baseT.Name}>...");
+            var modules = Modules.Where(x => x.ModuleEnabled && _baseT.IsAssignableFrom(x.GetType()));
+            Logger.Debug($"{modules.Count()} found modules by <{_baseT.Name}>");
+            return modules.Select(x=> (T)x);
+        }
+
         private void InitDirs()
             => Utility.MkDirs(Pathes.DIR_MODULES, Pathes.DIR_MODULES_CONFIGS, Pathes.DIR_MODULES_REQUIRED);
 

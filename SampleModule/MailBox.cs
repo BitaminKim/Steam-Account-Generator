@@ -1,4 +1,5 @@
 ﻿using MailKit.Net.Imap;
+using MimeKit;
 using SACModuleBase.Attributes;
 using SACModuleBase.Models;
 using SACModuleBase.Models.Mail;
@@ -55,16 +56,42 @@ namespace SampleModule
                         var inbox = client.Inbox;
                         Logger.Info("Getting inbox...");
                         inbox.Open(MailKit.FolderAccess.ReadWrite);
-                        var unreadIndex = inbox.FirstUnread;
-                        if (unreadIndex > 0)
+
+                        var unreadSort = inbox.Sort(MailKit.Search.SearchQuery.NotSeen, new[] { MailKit.Search.OrderBy.Date, MailKit.Search.OrderBy.Subject });
+                        var unread = inbox.Fetch(unreadSort, MailKit.MessageSummaryItems.All);
+                        foreach (var inboxMail in unread)
                         {
+                            if (inboxMail == null)
+                                continue;
+
                             Logger.Info("Unread message found...");
-                            var inboxMail = inbox.GetMessage(unreadIndex);
-                            inbox.SetFlags(unreadIndex, MailKit.MessageFlags.Seen, true);
-                            var mail = new MailBoxMailItem(inboxMail.From?.FirstOrDefault()?.Name ?? "unknown",
-                                inboxMail.To?.FirstOrDefault()?.Name ?? "unknown",
-                                inboxMail.Subject ?? "none",
-                                inboxMail.HtmlBody ?? inboxMail.TextBody ?? "none");
+                            try
+                            {
+                                inbox?.SetFlags(inboxMail.Index, MailKit.MessageFlags.Seen, true);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Warn("Mark as read error.", ex);
+                            }
+                            if (!(inboxMail?.NormalizedSubject?.ToLower()?.Contains("steam") ?? false))
+                                continue;
+
+                            var mailWithData = inbox.GetMessage(inboxMail.UniqueId);
+
+                            var envelope = inboxMail?.Envelope;
+                            var _body = mailWithData?.HtmlBody ?? mailWithData?.TextBody ?? "";
+                            var _from = envelope?.From?.Mailboxes?.FirstOrDefault()?.Address
+                                ?? mailWithData?.From?.FirstOrDefault()?.Name
+                                ?? "noreply@steampowered.com";
+                            var _to = envelope?.To?.Mailboxes?.FirstOrDefault()?.Address
+                                ?? mailWithData?.To?.FirstOrDefault()?.Name
+                                ?? response?.Email
+                                ?? "unknown";
+                            var _subject = inboxMail?.NormalizedSubject
+                                ?? mailWithData?.Subject
+                                ?? "unknown [will be steam confirmation]";
+
+                            var mail = new MailBoxMailItem(_from, _to, _subject, _body);
                             mails.Add(mail);
                         }
                     }

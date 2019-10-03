@@ -6,7 +6,7 @@ namespace SteamAccCreator.Models
     public class GameInfo
     {
         public string Name { get; set; }
-        public int SubId { get; set; }
+        public long SubId { get; set; }
 
         public override bool Equals(object obj)
         {
