@@ -80,6 +80,7 @@
     <Compile Include="Models\MailConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReCaptcha.cs" />
+    <Compile Include="UserAgentHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SACModuleBase\SACModuleBase.csproj">

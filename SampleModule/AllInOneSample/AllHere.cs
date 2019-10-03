@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace SampleModule.AllInOneSample
 {
     [SACModuleInfo("4C51DE5C-C702-40F2-8701-15F7F3C4F8B3", "All in one sample", "13.37")]
-    public class AllHere : ISACHandlerMailBox, ISACHandlerCaptcha, ISACHandlerReCaptcha, ISACUserInterface
+    public class AllHere : ISACHandlerMailBox, ISACHandlerCaptcha, ISACHandlerReCaptcha, ISACUserInterface, ISACHandlerUserAgent
     {
         /* Notes
          * 
@@ -27,6 +27,7 @@ namespace SampleModule.AllInOneSample
         private MailBox MailBox;
         private ImageCaptcha ImageCaptcha;
         private ReCaptcha ReCaptcha;
+        private UserAgentHandler UserAgent;
 
         public bool ModuleEnabled { get; set; } = true;
 
@@ -43,6 +44,9 @@ namespace SampleModule.AllInOneSample
 
             ReCaptcha = new ReCaptcha();
             ReCaptcha.ModuleInitialize(initialize);
+
+            UserAgent = new UserAgentHandler();
+            UserAgent.ModuleInitialize(initialize);
         }
 
         public string ShowButtonCaption => GuiConfiguration?.ShowButtonCaption ?? "Init...";
@@ -59,5 +63,8 @@ namespace SampleModule.AllInOneSample
 
         public CaptchaResponse Solve(ReCaptchaRequest request)
             => ReCaptcha?.Solve(request);
+
+        public string GetUserAgent()
+            => UserAgent?.GetUserAgent();
     }
 }
