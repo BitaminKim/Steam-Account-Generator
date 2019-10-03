@@ -23,6 +23,7 @@ namespace SteamAccCreator.Models
         public ISACHandlerMailBox HandlerMailBox { get; set; }
         public ISACHandlerCaptcha HandlerImageCaptcha { get; set; }
         public ISACHandlerReCaptcha HandlerGoogleCaptcha { get; set; }
+        public ISACHandlerUserAgent HandlerUserAgent { get; set; }
 
         /// <summary>
         /// Used to update accounts table

@@ -108,8 +108,6 @@ namespace SteamAccCreator.Gui
             DgvModules.DataSource = ModuleManager.ModuleBindings;
 
             DgvAccounts.DataSource = Accounts;
-
-            
         }
 
         private void SaveConfig()
@@ -198,7 +196,8 @@ namespace SteamAccCreator.Gui
             SaveConfig();
 
             var slowCaptchaMode = Configuration.Captcha.Service == Enums.CaptchaService.None;
-            for (var i = 0; i < NumAccountsCount.Value; i++)
+            var accounts2create = NumAccountsCount.Value;
+            for (var i = 0; i < accounts2create; i++)
             {
                 Logger.Trace($"Initializing account {i + 1} of {NumAccountsCount}...");
                 var handlerMailBox = ModuleManager
@@ -206,6 +205,9 @@ namespace SteamAccCreator.Gui
                     .FirstOrDefault();
                 var handlerReCaptcha = default(SACModuleBase.ISACHandlerReCaptcha);
                 var handlerImageCaptcha = default(SACModuleBase.ISACHandlerCaptcha);
+                var handlerUserAgent = ModuleManager
+                    .GetModulesByType<SACModuleBase.ISACHandlerUserAgent>()
+                    .FirstOrDefault();
 
                 switch (Configuration.Captcha.Service)
                 {
@@ -246,6 +248,7 @@ namespace SteamAccCreator.Gui
                     HandlerMailBox = handlerMailBox,
                     HandlerGoogleCaptcha = handlerReCaptcha,
                     HandlerImageCaptcha = handlerImageCaptcha,
+                    HandlerUserAgent = handlerUserAgent,
                     RefreshDisplayFn = () => RefreshDisplay(accountNumber),
                     SetStatusColorFn = (color) => ChangeStatusColor(accountNumber, color),
                     ExecuteInUiFn = (action) => ExecuteInvoke(action ?? new Action(() => Logger.Warn("Action to execute in UI is null!")))

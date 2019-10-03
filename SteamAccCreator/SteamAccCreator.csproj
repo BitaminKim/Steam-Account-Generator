@@ -240,9 +240,11 @@
     <Compile Include="Models\Steam\UploadProfileImage.cs" />
     <Compile Include="ModuleExtends.cs" />
     <Compile Include="ModuleLogger.cs" />
+    <Compile Include="OfflineHandlers\UserAgentHandler.cs" />
     <Compile Include="Pathes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserAgentList.cs" />
     <Compile Include="Utility.cs" />
     <Compile Include="Web\Account.cs" />
     <Compile Include="Web\Captcha\CaptchaSolution.cs" />

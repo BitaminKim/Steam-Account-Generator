@@ -66,9 +66,14 @@ namespace SteamAccCreator.Web
         {
             Options = options;
 
+            var handlerUserAgent = options?.HandlerUserAgent ?? new OfflineHandlers.UserAgentHandler();
+
+            var userAgent = handlerUserAgent.GetUserAgent();
+
             HttpClient = new RestClient("https://127.0.0.1/") // cuz this ask base even if you put full link in request object
             {
-                CookieContainer = new CookieContainer()
+                CookieContainer = new CookieContainer(),
+                UserAgent = userAgent
             };
 
             Steam = new Steam.SteamWebClient(HttpClient);
@@ -82,6 +87,8 @@ namespace SteamAccCreator.Web
             var localCaptchaHandler = new Captcha.Handlers.LocalCaptchaHandler(options);
             HandlerImageCaptcha = options.HandlerImageCaptcha ?? localCaptchaHandler;
             HandlerGooleCaptcha = options.HandlerGoogleCaptcha ?? localCaptchaHandler;
+
+            Debug($"User-Agent={userAgent}");
         }
 
         private void RandomizeLogin()

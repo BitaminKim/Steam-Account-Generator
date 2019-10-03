@@ -45,7 +45,6 @@ namespace SteamAccCreator.Web.Steam
             HttpClient = client ?? new RestClient();
             HttpClient.CookieContainer = HttpClient.CookieContainer ?? new CookieContainer(); // create new container if null
             HttpClient.AddDefaultHeader("Accept-Language", "en-US,en;q=0.5");
-            HttpClient.UserAgent = Defaults.Web.USER_AGENT; // maybe make random?..
 
             Join = new Join.SteamJoin(this);
             TwoFactor = new TwoFactor.SteamTwoFactor(this);
