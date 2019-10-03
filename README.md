@@ -1,12 +1,11 @@
-# Steam-Account-Creator
-Steam Account Generator
+# Steam Account Generator
 
 Web generator: https://accgen.cathook.club/ (not maintained by [EarsKilla](https://github.com/EarsKilla))
 
 |Branch|CI status|
 |------|---------|
-|[MASTER](https://github.com/EarsKilla/Steam-Account-Generator/tree/master)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/master?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/master)|
-|[DEV](https://github.com/EarsKilla/Steam-Account-Generator/tree/dev)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/dev?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/dev)|
+|[MASTER](https://github.com/steam-account-creator/Steam-Account-Generator/tree/master)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/master?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/master)|
+|[DEV](https://github.com/steam-account-creator/Steam-Account-Generator/tree/dev)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/dev?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/dev)|
 
 ![screenshot](https://i.vgy.me/cgb0Bo.png)
 
