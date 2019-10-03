@@ -7,7 +7,8 @@ Web generator: https://accgen.cathook.club/ (not maintained by [EarsKilla](https
 |[MASTER](https://github.com/steam-account-creator/Steam-Account-Generator/tree/master)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/master?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/master)|
 |[DEV](https://github.com/steam-account-creator/Steam-Account-Generator/tree/dev)|[![Build status](https://ci.appveyor.com/api/projects/status/b60sjwtl69ln5ir6/branch/dev?svg=true)](https://ci.appveyor.com/project/EarsKilla/steam-account-generator/branch/dev)|
 
-![screenshot](https://i.vgy.me/cgb0Bo.png)
+![screenshot](etc/app_screenshots/default/settings.png)  
+More screenshots [here](etc/app_screenshots/INDEX.md)
 
 Mass Steam Account generator features:
 - [x] Automatically generate and verify email
