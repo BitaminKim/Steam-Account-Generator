@@ -12,7 +12,7 @@ More screenshots [here](etc/app_screenshots/INDEX.md)
 
 Mass Steam Account generator features:
 - [x] Automatically generate and verify email
-  - [x] Custom email domain ([How to do this](https://github.com/EarsKilla/Steam-Account-Generator/wiki/Using-custom-mail-domain))
+  - [x] Custom email domain ([How to do this](https://github.com/steam-account-creator/Steam-Account-Generator/wiki/Using-custom-mail-domain))
   - [x] Custom email handler by implementing your own module
 - [x] Automatically generate username
 - [x] Automatically generate password
@@ -30,13 +30,13 @@ Mass Steam Account generator features:
 - [x] Automatically join to groups
 - [x] Automatically add free games to account
   - [x] Export/import this list  
-    **Note:** [How to find sub ID](https://github.com/EarsKilla/Steam-Account-Generator/wiki/Find-sub-ID)
+    **Note:** [How to find sub ID](https://github.com/steam-account-creator/Steam-Account-Generator/wiki/Find-sub-ID)
 - [x] Automatically save to text file
   - Can save accounts in CSV format and it can be imported for example in KeePass
 - [x] Manual and automatically captcha services:
   - Captchasolutions
   - 2Captcha/RuCaptcha
-  - **Note:** You can replace hosts of automatically captcha services ([here is how to do this](https://github.com/EarsKilla/Steam-Account-Generator/releases/tag/v1.1.2-pre3))
+  - **Note:** You can replace hosts of automatically captcha services ([here is how to do this](https://github.com/steam-account-creator/Steam-Account-Generator/releases/tag/v1.1.2-pre3))
   - You can implement your own module and solve using custom service
 - [x] Proxy support
   - [x] Multiple proxies are supported  
@@ -44,7 +44,7 @@ It will work with http/https/socks4/socks5
 - [x] Save most settings in JSON file.
 
 # Download
-[Steam-Account-Generator/releases](https://github.com/EarsKilla/Steam-Account-Generator/releases)
+[Steam-Account-Generator/releases](https://github.com/steam-account-creator/Steam-Account-Generator/releases)
 
 # Requirements
 - [.NET Framework 4.7.2](https://dotnet.microsoft.com/download/dotnet-framework-runtime/net472)
@@ -57,8 +57,8 @@ It will work with http/https/socks4/socks5
   **Note:** [Secondary link](https://onem3.cf/sac/) | GitHub hosted page  
   This is alternative for those who was born in country with "good" government (like me)
 ---
-- Read [F.A.Q.](https://github.com/EarsKilla/Steam-Account-Generator/wiki/F.A.Q.)
-- Look [Issues](https://github.com/EarsKilla/Steam-Account-Generator/issues)
+- Read [F.A.Q.](https://github.com/steam-account-creator/Steam-Account-Generator/wiki/F.A.Q.)
+- Look [Issues](https://github.com/steam-account-creator/Steam-Account-Generator/issues)
   - If you're still having issue that not solved or solution not found in places above. You can:
     - Ask for it in telegram chat (you will see link in [communication](#communication) part)
     - Create new issue
