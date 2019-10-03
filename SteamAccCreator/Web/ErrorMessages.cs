@@ -81,7 +81,7 @@
             public const string TF_LOAD_LINK_FAILED = "|Steam guard| Failed to load data from confirmation link!";
             public const string TF_LOAD_LINK_FAILED_FATAL = "|Steam guard| Something went wrong while loading data from link!";
             public const string TF_SEARCH_MESSAGE_ERROR = "|Steam guard| Something went wrong while searching message from Steam...";
-            public const string TF_SEARCH_MESSAGE_ERROR_FATAL = "|Steam guard| Failed to find mail!";
+            public const string TF_SEARCH_MESSAGE_ERROR_FATAL = "Failed to find mail!";
 
             public const string AVATAR_UPLOAD_FAILED = "Failed to upload profile photo!";
             public const string AVATAR_UPLOAD_FAILED_FATAL = "Cannot upload profile photo!";

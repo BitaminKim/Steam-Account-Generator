@@ -1040,17 +1040,17 @@ namespace SteamAccCreator.Web
                 return (false, true);
 
             var _status = (MailBoxResponse == null)
-                ? "Waiting for you confirm Steam guard disable..."
-                : "Waiting for Steam guard disable mail...";
-            UpdateStatus(_status, State.Processing);
+                ? "Waiting for your confirmation..."
+                : "Waiting for mail...";
 
             for (int i = 0; i < MailVerifyMaxRetry; i++)
             {
+                UpdateStatus($"[Disabling guard | Try {i + 1}/{ConfirmMailLoopMax}]: {_status}", State.Processing);
                 var disableLink = await GetGuardLinkFromMail();
                 if (!disableLink.Success)
                 {
-                    Warn($"--/Try {i + 1} of {MailVerifyMaxRetry}/-- {ErrorMessages.Account.TF_SEARCH_MESSAGE_ERROR_FATAL}");
-                    UpdateStatus($"[Try {i + 1}/{ConfirmMailLoopMax}]: {ErrorMessages.Account.TF_SEARCH_MESSAGE_ERROR_FATAL}", State.Processing);
+                    Warn($"--/Try {i + 1} of {MailVerifyMaxRetry}; Steam guard/-- {ErrorMessages.Account.TF_SEARCH_MESSAGE_ERROR_FATAL}");
+                    UpdateStatus($"[Disabling guard | Try {i + 1}/{ConfirmMailLoopMax}]: {ErrorMessages.Account.TF_SEARCH_MESSAGE_ERROR_FATAL}", State.Processing);
                     await Task.Delay(TimeSpan.FromSeconds(5)); // wait 5s and retry
                     continue;
                 }
