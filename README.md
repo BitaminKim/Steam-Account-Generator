@@ -11,10 +11,15 @@ Web generator: https://accgen.cathook.club/ (not maintained by [EarsKilla](https
 ![screenshot](https://i.vgy.me/cgb0Bo.png)
 
 Mass Steam Account generator features:
-- [x] Auto generate and verify email
+- [x] Automatically generate and verify email
   - [x] Custom email domain ([How to do this](https://github.com/EarsKilla/Steam-Account-Generator/wiki/Using-custom-mail-domain))
-- [x] Auto generate username
-- [x] Auto generate password
+  - [x] Custom email handler by implementing your own module
+- [x] Automatically generate username
+- [x] Automatically generate password
+- [x] Resolve Steam ID of created account
+- [x] Automatically disable Steam guard  
+  **Note:** Only with atomatically email confirmation, otherwise waiting for your confirmation.  
+  ⚠ At this moment not possible to check for user mail confirmation.
 - [x] Update profile info
   - Name
   - Real name
@@ -22,16 +27,17 @@ Mass Steam Account generator features:
   - Profile image
   - Location (country, city, etc)
   - Set url with your username (like this: `https://steamcommunity.com/id/<username>`)
-- [x] Auto add free games to account
-  - [x] Export/import this list
-  - **Note:** [How to find sub ID](https://github.com/EarsKilla/Steam-Account-Generator/wiki/Find-sub-ID)
-- [x] Resolve Steam ID of created account
-- [x] Auto save to text file
+- [x] Automatically join to groups
+- [x] Automatically add free games to account
+  - [x] Export/import this list  
+    **Note:** [How to find sub ID](https://github.com/EarsKilla/Steam-Account-Generator/wiki/Find-sub-ID)
+- [x] Automatically save to text file
   - Can save accounts in CSV format and it can be imported for example in KeePass
-- [x] Manual and auto captcha services:
+- [x] Manual and automatically captcha services:
   - Captchasolutions
   - 2Captcha/RuCaptcha
-  - **Note:** You can replace hosts of auto captcha services ([here is how to do this](https://github.com/EarsKilla/Steam-Account-Generator/releases/tag/v1.1.2-pre3))
+  - **Note:** You can replace hosts of automatically captcha services ([here is how to do this](https://github.com/EarsKilla/Steam-Account-Generator/releases/tag/v1.1.2-pre3))
+  - You can implement your own module and solve using custom service
 - [x] Proxy support
   - [x] Multiple proxies are supported  
 It will work with http/https/socks4/socks5
