@@ -108,6 +108,8 @@ namespace SteamAccCreator.Web
             Action onGood,
             Action onDone)
         {
+            const int MAX_THREADS = 200;
+
             var proxies = Proxies.ToList();
 
             var threadEndCb = new Action<Thread>((t) =>
@@ -183,12 +185,12 @@ namespace SteamAccCreator.Web
 
             await Task.Factory.StartNew(async () =>
             {
-                var thrs = new List<Thread>(10);
+                var thrs = new List<Thread>(MAX_THREADS);
                 while (CheckThreads.Count > 0)
                 {
                     lock (ThreadsSync)
                     {
-                        var _thrs = CheckThreads.Take(10 - thrs.Count);
+                        var _thrs = CheckThreads.Take(MAX_THREADS - thrs.Count);
                         thrs.AddRange(_thrs);
 
                         for (int i = thrs.Count - 1; i > -1; i--)
