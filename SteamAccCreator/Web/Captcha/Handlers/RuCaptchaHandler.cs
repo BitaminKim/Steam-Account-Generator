@@ -57,6 +57,9 @@ namespace SteamAccCreator.Web.Captcha.Handlers
             if (proxy == null)
                 return;
 
+            if (!Config.TransferProxy)
+                return;
+
             request.AddParameter("proxy", $"{proxy.Host}:{proxy.Port}");
             request.AddParameter("proxytype", (proxy.Type == ProxyType.Unknown) ? "HTTP" : proxy.Type.ToString().ToUpper());
         }

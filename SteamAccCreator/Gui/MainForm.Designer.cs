@@ -146,7 +146,6 @@ namespace SteamAccCreator.Gui
             this.Button = new System.Windows.Forms.DataGridViewButtonColumn();
             this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.BsProfileConfig = new System.Windows.Forms.BindingSource(this.components);
-            this.BsCaptchaTwoCapConfig = new System.Windows.Forms.BindingSource(this.components);
             this.BsCaptchaCapsolConfig = new System.Windows.Forms.BindingSource(this.components);
             this.enabledDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.Status = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -164,6 +163,8 @@ namespace SteamAccCreator.Gui
             this.passwordDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SteamId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.statusDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.CbCapTwoCaptchaProxy = new System.Windows.Forms.CheckBox();
+            this.BsCaptchaTwoCapConfig = new System.Windows.Forms.BindingSource(this.components);
             this.pnlCreation.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DgvAccounts)).BeginInit();
             this.tabControl.SuspendLayout();
@@ -183,11 +184,11 @@ namespace SteamAccCreator.Gui
             this.tabUpdates.SuspendLayout();
             this.tabAbout.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.BsProfileConfig)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaTwoCapConfig)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaCapsolConfig)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsProxyItem)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsModules)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsAccount)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaTwoCapConfig)).BeginInit();
             this.SuspendLayout();
             // 
             // txtEmail
@@ -924,6 +925,7 @@ namespace SteamAccCreator.Gui
             // 
             // GbCapTwoCaptcha
             // 
+            this.GbCapTwoCaptcha.Controls.Add(this.CbCapTwoCaptchaProxy);
             this.GbCapTwoCaptcha.Controls.Add(this.CbCapTwoCaptchaReportBad);
             this.GbCapTwoCaptcha.Controls.Add(this.LbCapTwoCaptchaKey);
             this.GbCapTwoCaptcha.Controls.Add(this.TbCapTwoCaptchaKey);
@@ -1635,10 +1637,6 @@ namespace SteamAccCreator.Gui
             // 
             this.BsProfileConfig.DataSource = typeof(SteamAccCreator.Models.ProfileConfig);
             // 
-            // BsCaptchaTwoCapConfig
-            // 
-            this.BsCaptchaTwoCapConfig.DataSource = typeof(SteamAccCreator.Models.RuCaptchaConfig);
-            // 
             // BsCaptchaCapsolConfig
             // 
             this.BsCaptchaCapsolConfig.DataSource = typeof(SteamAccCreator.Models.CaptchaSolutionsConfig);
@@ -1777,6 +1775,21 @@ namespace SteamAccCreator.Gui
             this.statusDataGridViewTextBoxColumn.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.statusDataGridViewTextBoxColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             // 
+            // CbCapTwoCaptchaProxy
+            // 
+            this.CbCapTwoCaptchaProxy.AutoSize = true;
+            this.CbCapTwoCaptchaProxy.DataBindings.Add(new System.Windows.Forms.Binding("Checked", this.BsCaptchaTwoCapConfig, "TransferProxy", true));
+            this.CbCapTwoCaptchaProxy.Location = new System.Drawing.Point(154, 45);
+            this.CbCapTwoCaptchaProxy.Name = "CbCapTwoCaptchaProxy";
+            this.CbCapTwoCaptchaProxy.Size = new System.Drawing.Size(101, 17);
+            this.CbCapTwoCaptchaProxy.TabIndex = 3;
+            this.CbCapTwoCaptchaProxy.Text = "Transfer proxies";
+            this.CbCapTwoCaptchaProxy.UseVisualStyleBackColor = true;
+            // 
+            // BsCaptchaTwoCapConfig
+            // 
+            this.BsCaptchaTwoCapConfig.DataSource = typeof(SteamAccCreator.Models.RuCaptchaConfig);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1821,11 +1834,11 @@ namespace SteamAccCreator.Gui
             this.tabAbout.ResumeLayout(false);
             this.tabAbout.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.BsProfileConfig)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaTwoCapConfig)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaCapsolConfig)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsProxyItem)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsModules)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.BsAccount)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.BsCaptchaTwoCapConfig)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1962,6 +1975,7 @@ namespace SteamAccCreator.Gui
         private System.Windows.Forms.DataGridViewTextBoxColumn SteamId;
         private System.Windows.Forms.DataGridViewTextBoxColumn statusDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
+        private System.Windows.Forms.CheckBox CbCapTwoCaptchaProxy;
     }
 }
 

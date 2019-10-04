@@ -118,6 +118,10 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
                 (m) => true,
                 Web.Steam.SteamWebClient.DisableLegitDelay);
 
+            Web.Account.SkipSteamGuardDisable = Utility.GetStartOption(@"-skip(Steam)?Guard",
+                (m) => true,
+                Web.Account.SkipSteamGuardDisable);
+
             var noStylesOpt = Utility.HasStartOption("-nostyles");
             if (!noStylesOpt)
             {
@@ -142,6 +146,7 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
                 $"Count of mail checks in hand mode: {Web.Mail.MailHandler.CheckUserMailVerifyCount}\n" +
                 $"Count of mail checks in auto mode: {Web.Mail.MailHandler.CheckRandomMailVerifyCount}\n" +
                 $"Disable \"legit\" delays between Steam requests: {(Web.Steam.SteamWebClient.DisableLegitDelay ? "Yes" : "No")}\n" +
+                $"Skip disabling Steam guard: {(Web.Account.SkipSteamGuardDisable ? "Yes" : "No")}\n" +
                 $"NoStyles: {(noStylesOpt ? "Yes" : "No")}\n" +
                 $"Default text render: {(defTextRenderOpt ? "Yes" : "No")}\n" +
                 "######################################");

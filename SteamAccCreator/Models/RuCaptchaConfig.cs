@@ -9,5 +9,7 @@ namespace SteamAccCreator.Models
     {
         public string ApiKey { get; set; } = "";
         public bool ReportBad { get; set; } = false;
+
+        public bool TransferProxy { get; set; } = true;
     }
 }

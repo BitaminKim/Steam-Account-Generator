@@ -27,6 +27,7 @@ namespace SteamAccCreator.Web
             RegexOptions.IgnoreCase);
         public static int ConfirmMailLoopMax = 5; // max. of tries to confirm mail
         public static Regex SteamMailConfirmed = new Regex("class=\\\"newaccount_email_verified_text\\\"", RegexOptions.IgnoreCase);
+        public static bool SkipSteamGuardDisable = false;
         public static Regex SteamGuardDisabled = new Regex("class=\\\"(email_verified_text\\serror|error\\semail_verified_text)\\\"", RegexOptions.IgnoreCase); // it will not match!
         public static Regex SteamGroupLink = new Regex(@"https?:\/\/steamcommunity\.com\/groups\/([^?#]+)", RegexOptions.IgnoreCase);
 
@@ -73,7 +74,8 @@ namespace SteamAccCreator.Web
             HttpClient = new RestClient("https://127.0.0.1/") // cuz this ask base even if you put full link in request object
             {
                 CookieContainer = new CookieContainer(),
-                UserAgent = userAgent
+                UserAgent = userAgent,
+                FollowRedirects = true, // we will...
             };
 
             Steam = new Steam.SteamWebClient(HttpClient);
@@ -772,15 +774,21 @@ namespace SteamAccCreator.Web
 
             await Task.Delay(3000);
 
-            var disableGuard = await DisableSteamGuard();
-            if (!disableGuard.Success)
+            var isGuardDisabled = false;
+            if (!SkipSteamGuardDisable)
             {
-                if (disableGuard.IsFatal)
+                var disableGuard = await DisableSteamGuard();
+                if (!disableGuard.Success)
                 {
-                    SwitchState(State.GuardLeavedOn);
-                    Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
-                    return;
+                    if (disableGuard.IsFatal)
+                    {
+                        SwitchState(State.Failed);
+                        Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
+                        return;
+                    }
                 }
+                else
+                    isGuardDisabled = true;
             }
 
             var activatedLicenses = 0;
@@ -796,29 +804,50 @@ namespace SteamAccCreator.Web
 
             await Task.Delay(3000);
 
-            if (!(await UpdateProfileInformation()))
+            var isProfileUpdated = false;
+            var setProfilePhotoState = ProfilePhotoState.FileNotSet;
+            if ((Config?.Profile?.Enabled ?? false))
             {
-                Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
-                return;
+                isProfileUpdated = await UpdateProfileInformation();
+
+                await Task.Run(Steam.LegitDelay);
+
+                setProfilePhotoState = await SetProfilePhoto();
             }
-
-            await Task.Run(Steam.LegitDelay);
-
-            await SetProfilePhoto();
-
-            await Task.Run(Steam.LegitDelay);
 
             var groupsJoined = 0;
             var doGroupsJoin = Config.Profile.DoJoinToGroups && (Config?.Profile?.GroupsToJoin?.Count() ?? 0) > 0;
             if (doGroupsJoin)
+            {
+                await Task.Run(Steam.LegitDelay);
                 groupsJoined = await JoinToGroups();
+            }
 
             var _lastState = SaveAccount();
 
-            var actionsDone = new Dictionary<string, string>
+            var actionsDone = new Dictionary<string, string>();
+
+            if (!SkipSteamGuardDisable)
+                actionsDone.Add("Guard", (isGuardDisabled) ? "Off" : "ON!");
+            if ((Config?.Profile?.Enabled ?? false))
             {
-                { "Guard", (disableGuard.Success) ? "Off" : "ON!" }
-            };
+                actionsDone.Add("Profile", (isProfileUpdated) ? "OK" : "Fail!");
+                switch (setProfilePhotoState)
+                {
+                    case ProfilePhotoState.Success:
+                        actionsDone.Add("Photo", "OK");
+                        break;
+                    case ProfilePhotoState.FileNotFound:
+                        actionsDone.Add("Profile", "Lost file!");
+                        break;
+                    case ProfilePhotoState.RequestError:
+                        actionsDone.Add("Profile", "Fail!");
+                        break;
+                    case ProfilePhotoState.FileNotSet:
+                    default:
+                        break;
+                }
+            }
             if (doGroupsJoin)
                 actionsDone.Add("Groups", $"{groupsJoined}/{Config?.Profile?.GroupsToJoin?.Count() ?? 0}");
             if (doLicensesActivation)
@@ -835,7 +864,7 @@ namespace SteamAccCreator.Web
                     break;
             }
 
-            UpdateStatus($"{completeStatus} [{string.Join(";", actionsDone.Select(x=> $"{x.Key}={x.Value}"))}]", _lastState);
+            UpdateStatus($"{completeStatus} [{string.Join(";", actionsDone.Select(x => $"{x.Key}={x.Value}"))}]", _lastState);
         }
 
         private State SaveAccount()
@@ -938,24 +967,24 @@ namespace SteamAccCreator.Web
 
             return false;
         }
-        private async Task SetProfilePhoto()
+        private async Task<ProfilePhotoState> SetProfilePhoto()
         {
             if (string.IsNullOrEmpty(Config?.Profile?.Image))
             {
                 Info("No profile photo is set!");
-                return;
+                return ProfilePhotoState.FileNotSet;
             }
             if (!System.IO.File.Exists(Config?.Profile?.Image))
             {
                 Warn($"Cannot find profile image at '{Config?.Profile?.Image ?? "..."}'!");
-                return;
+                return ProfilePhotoState.FileNotFound;
             }
 
             UpdateStatus("Uploading profile photo...", State.Processing);
 
             var response = await Task.Run(() => Steam.Account.UploadAvatar(Config.Profile.Image));
             if (response.IsSuccess)
-                return;
+                return ProfilePhotoState.Success;
 
             if (response.Exception == null)
             {
@@ -967,6 +996,8 @@ namespace SteamAccCreator.Web
                 Error(ErrorMessages.Account.AVATAR_UPLOAD_FAILED_FATAL, response.Exception);
                 UpdateStatus(ErrorMessages.Account.AVATAR_UPLOAD_FAILED_FATAL, State.Failed);
             }
+
+            return ProfilePhotoState.RequestError;
         }
 
         private async Task<int> ActivateLicenses()
@@ -1017,12 +1048,30 @@ namespace SteamAccCreator.Web
 
         private async Task<(bool Success, bool IsFatal)> DisableSteamGuard()
         {
+            UpdateStatus("Enabling Steam guard...", State.Processing);
+
+            var tfEnableResponse = await Task.Run(() => Steam.TwoFactor.TurnOnByMail());
+            if (!tfEnableResponse.IsSuccess)
+            {
+                if (tfEnableResponse.Exception == null)
+                {
+                    Warn(ErrorMessages.Account.TF_FAILED_TO_ENABLE);
+                    UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_ENABLE, State.Failed);
+                }
+                else
+                {
+                    Error(ErrorMessages.Account.TF_FAILED_TO_ENABLE_FATAL, tfEnableResponse.Exception);
+                    UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_ENABLE_FATAL, State.Failed);
+                }
+                return (false, true);
+            }
+
             UpdateStatus("Disabling Steam guard...", State.Processing);
 
-            var response = await Task.Run(() => Steam.TwoFactor.TurnOff());
-            if (!response.IsSuccess)
+            var tfDisableResponse = await Task.Run(() => Steam.TwoFactor.TurnOff());
+            if (!tfDisableResponse.IsSuccess)
             {
-                if (response.Exception == null)
+                if (tfDisableResponse.Exception == null)
                 {
                     Warn(ErrorMessages.Account.TF_FAILED_TO_DISABLE);
                     UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_DISABLE, State.Failed);
@@ -1035,13 +1084,15 @@ namespace SteamAccCreator.Web
                 return (false, true);
             }
 
-            var tfDisable = response.HttpResponses.Last();
+            var tfDisable = tfDisableResponse.HttpResponses.Last();
             if (!Regex.IsMatch(tfDisable?.Content ?? "", @"phone_box", RegexOptions.IgnoreCase))
-                return (false, true);
+                return (false, false); //thonk... old: (false, true)
 
             var _status = (MailBoxResponse == null)
                 ? "Waiting for your confirmation..."
                 : "Waiting for mail...";
+
+            await Task.Delay(TimeSpan.FromSeconds(5)); // wait 5s. we will wait for mail to be delivered
 
             for (int i = 0; i < MailVerifyMaxRetry; i++)
             {
@@ -1243,6 +1294,14 @@ namespace SteamAccCreator.Web
             Processing,
             GuardLeavedOn,
             Failed,
+        }
+
+        private enum ProfilePhotoState
+        {
+            Success,
+            FileNotFound,
+            FileNotSet,
+            RequestError
         }
     }
 }
