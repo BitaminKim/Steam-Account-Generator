@@ -118,6 +118,10 @@ Latest versions will be here: https://github.com/EarsKilla/Steam-Account-Generat
                 (m) => true,
                 Web.Steam.SteamWebClient.DisableLegitDelay);
 
+            Web.Account.SkipSteamGuardDisable = Utility.GetStartOption(@"-skip(Steam)?Guard",
+                (m) => true,
+                Web.Account.SkipSteamGuardDisable);
+
             var noStylesOpt = Utility.HasStartOption("-nostyles");
             if (!noStylesOpt)
             {

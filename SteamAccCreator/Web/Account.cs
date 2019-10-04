@@ -27,6 +27,7 @@ namespace SteamAccCreator.Web
             RegexOptions.IgnoreCase);
         public static int ConfirmMailLoopMax = 5; // max. of tries to confirm mail
         public static Regex SteamMailConfirmed = new Regex("class=\\\"newaccount_email_verified_text\\\"", RegexOptions.IgnoreCase);
+        public static bool SkipSteamGuardDisable = false;
         public static Regex SteamGuardDisabled = new Regex("class=\\\"(email_verified_text\\serror|error\\semail_verified_text)\\\"", RegexOptions.IgnoreCase); // it will not match!
         public static Regex SteamGroupLink = new Regex(@"https?:\/\/steamcommunity\.com\/groups\/([^?#]+)", RegexOptions.IgnoreCase);
 
@@ -772,15 +773,21 @@ namespace SteamAccCreator.Web
 
             await Task.Delay(3000);
 
-            var disableGuard = await DisableSteamGuard();
-            if (!disableGuard.Success)
+            var isGuardDisabled = false;
+            if (!SkipSteamGuardDisable)
             {
-                if (disableGuard.IsFatal)
+                var disableGuard = await DisableSteamGuard();
+                if (!disableGuard.Success)
                 {
-                    SwitchState(State.GuardLeavedOn);
-                    Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
-                    return;
+                    if (disableGuard.IsFatal)
+                    {
+                        SwitchState(State.Failed);
+                        Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
+                        return;
+                    }
                 }
+                else
+                    isGuardDisabled = true;
             }
 
             var activatedLicenses = 0;
@@ -815,10 +822,10 @@ namespace SteamAccCreator.Web
 
             var _lastState = SaveAccount();
 
-            var actionsDone = new Dictionary<string, string>
-            {
-                { "Guard", (disableGuard.Success) ? "Off" : "ON!" }
-            };
+            var actionsDone = new Dictionary<string, string>();
+
+            if (!SkipSteamGuardDisable)
+                actionsDone.Add("Guard", (isGuardDisabled) ? "Off" : "ON!");
             if (doGroupsJoin)
                 actionsDone.Add("Groups", $"{groupsJoined}/{Config?.Profile?.GroupsToJoin?.Count() ?? 0}");
             if (doLicensesActivation)
