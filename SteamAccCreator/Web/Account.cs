@@ -74,7 +74,8 @@ namespace SteamAccCreator.Web
             HttpClient = new RestClient("https://127.0.0.1/") // cuz this ask base even if you put full link in request object
             {
                 CookieContainer = new CookieContainer(),
-                UserAgent = userAgent
+                UserAgent = userAgent,
+                FollowRedirects = true, // we will...
             };
 
             Steam = new Steam.SteamWebClient(HttpClient);
@@ -1047,12 +1048,30 @@ namespace SteamAccCreator.Web
 
         private async Task<(bool Success, bool IsFatal)> DisableSteamGuard()
         {
+            UpdateStatus("Enabling Steam guard...", State.Processing);
+
+            var tfEnableResponse = await Task.Run(() => Steam.TwoFactor.TurnOnByMail());
+            if (!tfEnableResponse.IsSuccess)
+            {
+                if (tfEnableResponse.Exception == null)
+                {
+                    Warn(ErrorMessages.Account.TF_FAILED_TO_ENABLE);
+                    UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_ENABLE, State.Failed);
+                }
+                else
+                {
+                    Error(ErrorMessages.Account.TF_FAILED_TO_ENABLE_FATAL, tfEnableResponse.Exception);
+                    UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_ENABLE_FATAL, State.Failed);
+                }
+                return (false, true);
+            }
+
             UpdateStatus("Disabling Steam guard...", State.Processing);
 
-            var response = await Task.Run(() => Steam.TwoFactor.TurnOff());
-            if (!response.IsSuccess)
+            var tfDisableResponse = await Task.Run(() => Steam.TwoFactor.TurnOff());
+            if (!tfDisableResponse.IsSuccess)
             {
-                if (response.Exception == null)
+                if (tfDisableResponse.Exception == null)
                 {
                     Warn(ErrorMessages.Account.TF_FAILED_TO_DISABLE);
                     UpdateStatus(ErrorMessages.Account.TF_FAILED_TO_DISABLE, State.Failed);
@@ -1065,13 +1084,15 @@ namespace SteamAccCreator.Web
                 return (false, true);
             }
 
-            var tfDisable = response.HttpResponses.Last();
+            var tfDisable = tfDisableResponse.HttpResponses.Last();
             if (!Regex.IsMatch(tfDisable?.Content ?? "", @"phone_box", RegexOptions.IgnoreCase))
                 return (false, false); //thonk... old: (false, true)
 
             var _status = (MailBoxResponse == null)
                 ? "Waiting for your confirmation..."
                 : "Waiting for mail...";
+
+            await Task.Delay(TimeSpan.FromSeconds(5)); // wait 5s. we will wait for mail to be delivered
 
             for (int i = 0; i < MailVerifyMaxRetry; i++)
             {
