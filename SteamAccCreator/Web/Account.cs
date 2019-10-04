@@ -803,22 +803,24 @@ namespace SteamAccCreator.Web
 
             await Task.Delay(3000);
 
-            if (!(await UpdateProfileInformation()))
+            var isProfileUpdated = false;
+            var setProfilePhotoState = ProfilePhotoState.FileNotSet;
+            if ((Config?.Profile?.Enabled ?? false))
             {
-                Warn(ErrorMessages.Account.FAILED_TO_CREATE_FATAL);
-                return;
+                isProfileUpdated = await UpdateProfileInformation();
+
+                await Task.Run(Steam.LegitDelay);
+
+                setProfilePhotoState = await SetProfilePhoto();
             }
-
-            await Task.Run(Steam.LegitDelay);
-
-            await SetProfilePhoto();
-
-            await Task.Run(Steam.LegitDelay);
 
             var groupsJoined = 0;
             var doGroupsJoin = Config.Profile.DoJoinToGroups && (Config?.Profile?.GroupsToJoin?.Count() ?? 0) > 0;
             if (doGroupsJoin)
+            {
+                await Task.Run(Steam.LegitDelay);
                 groupsJoined = await JoinToGroups();
+            }
 
             var _lastState = SaveAccount();
 
@@ -826,6 +828,25 @@ namespace SteamAccCreator.Web
 
             if (!SkipSteamGuardDisable)
                 actionsDone.Add("Guard", (isGuardDisabled) ? "Off" : "ON!");
+            if ((Config?.Profile?.Enabled ?? false))
+            {
+                actionsDone.Add("Profile", (isProfileUpdated) ? "OK" : "Fail!");
+                switch (setProfilePhotoState)
+                {
+                    case ProfilePhotoState.Success:
+                        actionsDone.Add("Photo", "OK");
+                        break;
+                    case ProfilePhotoState.FileNotFound:
+                        actionsDone.Add("Profile", "Lost file!");
+                        break;
+                    case ProfilePhotoState.RequestError:
+                        actionsDone.Add("Profile", "Fail!");
+                        break;
+                    case ProfilePhotoState.FileNotSet:
+                    default:
+                        break;
+                }
+            }
             if (doGroupsJoin)
                 actionsDone.Add("Groups", $"{groupsJoined}/{Config?.Profile?.GroupsToJoin?.Count() ?? 0}");
             if (doLicensesActivation)
@@ -842,7 +863,7 @@ namespace SteamAccCreator.Web
                     break;
             }
 
-            UpdateStatus($"{completeStatus} [{string.Join(";", actionsDone.Select(x=> $"{x.Key}={x.Value}"))}]", _lastState);
+            UpdateStatus($"{completeStatus} [{string.Join(";", actionsDone.Select(x => $"{x.Key}={x.Value}"))}]", _lastState);
         }
 
         private State SaveAccount()
@@ -945,24 +966,24 @@ namespace SteamAccCreator.Web
 
             return false;
         }
-        private async Task SetProfilePhoto()
+        private async Task<ProfilePhotoState> SetProfilePhoto()
         {
             if (string.IsNullOrEmpty(Config?.Profile?.Image))
             {
                 Info("No profile photo is set!");
-                return;
+                return ProfilePhotoState.FileNotSet;
             }
             if (!System.IO.File.Exists(Config?.Profile?.Image))
             {
                 Warn($"Cannot find profile image at '{Config?.Profile?.Image ?? "..."}'!");
-                return;
+                return ProfilePhotoState.FileNotFound;
             }
 
             UpdateStatus("Uploading profile photo...", State.Processing);
 
             var response = await Task.Run(() => Steam.Account.UploadAvatar(Config.Profile.Image));
             if (response.IsSuccess)
-                return;
+                return ProfilePhotoState.Success;
 
             if (response.Exception == null)
             {
@@ -974,6 +995,8 @@ namespace SteamAccCreator.Web
                 Error(ErrorMessages.Account.AVATAR_UPLOAD_FAILED_FATAL, response.Exception);
                 UpdateStatus(ErrorMessages.Account.AVATAR_UPLOAD_FAILED_FATAL, State.Failed);
             }
+
+            return ProfilePhotoState.RequestError;
         }
 
         private async Task<int> ActivateLicenses()
@@ -1250,6 +1273,14 @@ namespace SteamAccCreator.Web
             Processing,
             GuardLeavedOn,
             Failed,
+        }
+
+        private enum ProfilePhotoState
+        {
+            Success,
+            FileNotFound,
+            FileNotSet,
+            RequestError
         }
     }
 }
