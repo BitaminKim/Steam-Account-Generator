@@ -192,6 +192,7 @@
     <Compile Include="Interfaces\ICaptchaDialog.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Models\AccountCreateOptions.cs" />
+    <Compile Include="Models\AccountLogger.cs" />
     <Compile Include="Models\CaptchaSolutionsConfig.cs" />
     <Compile Include="Models\CredentialConfig.cs" />
     <Compile Include="Models\GameInfo.cs" />

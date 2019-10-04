@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 
@@ -35,20 +36,24 @@ namespace SteamAccCreator.Web.Steam
         }
         public long? SteamId { get; internal set; }
 
+        private SACModuleBase.ISACLogger Logger { get; }
+
         public Join.SteamJoin Join { get; }
         public TwoFactor.SteamTwoFactor TwoFactor { get; }
         public Account.AccountManage Account { get; }
 
-        public SteamWebClient() : this(client: null) { }
-        public SteamWebClient(RestClient client)
+        public SteamWebClient(SACModuleBase.ISACLogger logger) : this(client: null, logger) { }
+        public SteamWebClient(RestClient client, SACModuleBase.ISACLogger logger)
         {
+            Logger = logger ?? throw new ArgumentNullException("You should assign logger!");
+
             HttpClient = client ?? new RestClient();
             HttpClient.CookieContainer = HttpClient.CookieContainer ?? new CookieContainer(); // create new container if null
             HttpClient.AddDefaultHeader("Accept-Language", "en-US,en;q=0.5");
 
-            Join = new Join.SteamJoin(this);
-            TwoFactor = new TwoFactor.SteamTwoFactor(this);
-            Account = new Account.AccountManage(this);
+            Join = new Join.SteamJoin(this, logger);
+            TwoFactor = new TwoFactor.SteamTwoFactor(this, logger);
+            Account = new Account.AccountManage(this, logger);
         }
 
         /// <summary>
@@ -69,11 +74,17 @@ namespace SteamAccCreator.Web.Steam
         /// <typeparam name="T">Type needed</typeparam>
         public SteamResponse<T> Execute<T>(IRestRequest request, JsonSerializerSettings jsonSerializerSettings)
         {
+            Logger.Info($"Requesting '{request.Resource}'...");
+
             var response = Execute(request);
             Logger.Trace($"--/HTTP/--:\n" +
-                $"{nameof(request)}.{nameof(request.Resource)}: {request.Resource}\n" +
                 $"{nameof(response)}.{nameof(response.IsSuccessful)}: {((response.IsSuccessful) ? "true" : "false")}\n" +
+                $"{nameof(request)}.{nameof(request.Resource)}: {request.Resource}\n" +
+                $"{nameof(request)}.{nameof(request.Parameters)}: {request.Parameters.Where(x=> x.Type == ParameterType.GetOrPost || x.Type == ParameterType.QueryString).Select(x=> $"{x.Name}={x.Value}")}\n" +
                 $"{nameof(response)}.{nameof(response.Content)}:\n=========\n{response.Content}\n=========");
+
+            if (!response.IsSuccessful)
+                return new SteamResponse<T>(default(T), response);
 
             try
             {

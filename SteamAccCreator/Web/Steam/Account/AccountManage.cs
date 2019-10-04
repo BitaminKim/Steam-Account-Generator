@@ -10,7 +10,7 @@ namespace SteamAccCreator.Web.Steam.Account
 {
     public class AccountManage : Abstractions.SteamCategoryBase
     {
-        public AccountManage(SteamWebClient steam) : base(steam) { }
+        public AccountManage(SteamWebClient steam, SACModuleBase.ISACLogger logger) : base(steam, logger) { }
 
         public SteamResponse<bool> EditProfile(string name, string realName,
             string country, string state, string city, string customUrl,

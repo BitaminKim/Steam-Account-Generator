@@ -50,6 +50,8 @@ namespace SteamAccCreator.Web
 
         private bool IsValidToRegister = true;
 
+        private AccountLogger Logger { get; }
+
         private Steam.SteamWebClient Steam;
         private RestClient HttpClient;
 
@@ -65,6 +67,8 @@ namespace SteamAccCreator.Web
 
         public Account(AccountCreateOptions options)
         {
+            Logger = new AccountLogger(this);
+
             Options = options;
 
             var handlerUserAgent = options?.HandlerUserAgent ?? new OfflineHandlers.UserAgentHandler();
@@ -78,7 +82,7 @@ namespace SteamAccCreator.Web
                 FollowRedirects = true, // we will...
             };
 
-            Steam = new Steam.SteamWebClient(HttpClient);
+            Steam = new Steam.SteamWebClient(HttpClient, Logger);
 
             if (Config.Login.Random)
                 RandomizeLogin();
@@ -1276,15 +1280,14 @@ namespace SteamAccCreator.Web
             }
         }
 
-        private string LogAccInfo => $"{{{nameof(Account)};login={_Login ?? "!!!NOT YET READY"};mail={_Mail ?? "!!!NOT YET READY"}}}";
         private void Info(string message)
-            => Logger.Info($"{LogAccInfo}: {message}");
+            => Logger.Info(message);
         private void Debug(string message)
-            => Logger.Debug($"{LogAccInfo}: {message}");
+            => Logger.Debug(message);
         private void Warn(string message)
-            => Logger.Warn($"{LogAccInfo}: {message}");
+            => Logger.Warn(message);
         private void Error(string message, Exception exception)
-            => Logger.Error($"{LogAccInfo}: {message}", exception);
+            => Logger.Error(message, exception);
 
         private enum State
         {
