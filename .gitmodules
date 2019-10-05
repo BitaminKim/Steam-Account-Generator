@@ -1,0 +1,4 @@
+[submodule "ModuleBase"]
+	path = ModuleBase
+	url = https://github.com/steam-account-creator/ModuleBase.git
+	branch = dev
