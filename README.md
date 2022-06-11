@@ -1,6 +1,9 @@
 # Steam-Account-Creator
 Steam Account Generator
 
+# This project was abandoned for a long time
+So.. I decided to archive this repository. See #77 issue from 2020 year for details
+
 Web generator: https://accgen.cathook.club/ (not maintained by [EarsKilla](https://github.com/EarsKilla))
 
 |Branch|CI status|
